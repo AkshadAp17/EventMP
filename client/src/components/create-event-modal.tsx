@@ -52,13 +52,17 @@ export default function CreateEventModal({ isOpen, onClose }: CreateEventModalPr
 
   const createEventMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
+      console.log('Frontend form data:', data);
+      
       const eventData = {
         ...data,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
+        startDate: data.startDate, // Keep as string, backend will handle conversion
+        endDate: data.endDate,     // Keep as string, backend will handle conversion
         ticketPrice: data.ticketPrice,
-        maxAttendees: parseInt(data.maxAttendees),
+        maxAttendees: data.maxAttendees, // Keep as string, backend will handle conversion
       };
+      
+      console.log('Sending to API:', eventData);
       
       const response = await apiRequest("POST", "/api/events", eventData);
       return response.json();

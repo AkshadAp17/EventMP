@@ -95,9 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      // Debug and convert data types properly
-      console.log('Raw request body:', req.body);
-      
+      // Convert data types properly for validation
       const processedData = {
         ...req.body,
         startDate: new Date(req.body.startDate),
@@ -106,8 +104,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxAttendees: parseInt(req.body.maxAttendees.toString()),
         createdBy: req.user.id,
       };
-      
-      console.log('Processed data:', processedData);
 
       const eventData = insertEventSchema.parse(processedData);
       
