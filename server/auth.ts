@@ -44,12 +44,14 @@ export function setupAuth(app: Express) {
     secret: process.env.SESSION_SECRET || 'default-dev-secret-key-change-in-production',
     store: sessionStore,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false for development
       maxAge: sessionTtl,
+      sameSite: 'lax',
     },
+    name: 'eventmaster.sid',
   };
 
   app.set("trust proxy", 1);
@@ -58,14 +60,22 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   // Auth0 Strategy
+  console.log('Auth0 config check:', {
+    domain: process.env.AUTH0_DOMAIN?.trim(),
+    clientID: process.env.AUTH0_CLIENT_ID?.trim()?.substring(0, 10) + '...',
+    hasSecret: !!process.env.AUTH0_CLIENT_SECRET?.trim(),
+    callbackURL: `${process.env.AUTH0_BASE_URL}/api/auth/callback`
+  });
+  
   if (process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID && process.env.AUTH0_CLIENT_SECRET) {
     passport.use(
       new Auth0Strategy(
         {
-          domain: process.env.AUTH0_DOMAIN?.trim(),
-          clientID: process.env.AUTH0_CLIENT_ID?.trim(),
-          clientSecret: process.env.AUTH0_CLIENT_SECRET?.trim(),
+          domain: process.env.AUTH0_DOMAIN.trim(),
+          clientID: process.env.AUTH0_CLIENT_ID.trim(),
+          clientSecret: process.env.AUTH0_CLIENT_SECRET.trim(),
           callbackURL: `${process.env.AUTH0_BASE_URL}/api/auth/callback`,
+          scope: 'openid email profile',
         },
         async (accessToken, refreshToken, extraParams, profile, done) => {
           try {

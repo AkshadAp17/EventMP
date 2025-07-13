@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import passport from "passport";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { insertEventSchema, insertBookingSchema } from "@shared/schema";
@@ -248,6 +249,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Webhook error" });
     }
   });
+
+  // Auth0 authentication routes
+  app.get('/api/auth/login', passport.authenticate('auth0', {
+    scope: 'openid email profile'
+  }));
+
+  app.get('/api/auth/callback', 
+    passport.authenticate('auth0', { failureRedirect: '/auth?error=auth_failed' }),
+    (req, res) => {
+      // Successful authentication, redirect to events page
+      res.redirect('/events');
+    }
+  );
 
   const httpServer = createServer(app);
   return httpServer;
