@@ -3,21 +3,19 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { ProtectedRoute } from "./lib/protected-route";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Events from "@/pages/events";
 import EventDetails from "@/pages/event-details";
 import Checkout from "@/pages/checkout";
+import AuthPage from "@/pages/auth-page";
 import type { User } from "@shared/schema";
 
 function Router() {
-  const { isAuthenticated, isLoading, user } = useAuth() as {
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    user?: User;
-  };
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -29,21 +27,16 @@ function Router() {
 
   return (
     <Switch>
-      {!isAuthenticated ? (
-        <>
-          <Route path="/" component={Landing} />
-          <Route path="/events" component={Events} />
-          <Route path="/events/:id" component={EventDetails} />
-        </>
-      ) : (
-        <>
-          <Route path="/" component={user?.isAdmin ? AdminDashboard : Events} />
-          <Route path="/admin" component={AdminDashboard} />
-          <Route path="/events" component={Events} />
-          <Route path="/events/:id" component={EventDetails} />
-          <Route path="/checkout/:bookingId" component={Checkout} />
-        </>
-      )}
+      {/* Public routes */}
+      <Route path="/" component={user ? (user.isAdmin ? AdminDashboard : Events) : Landing} />
+      <Route path="/events" component={Events} />
+      <Route path="/events/:id" component={EventDetails} />
+      <Route path="/auth" component={AuthPage} />
+      
+      {/* Protected routes */}
+      <ProtectedRoute path="/admin" component={AdminDashboard} />
+      <ProtectedRoute path="/checkout/:bookingId" component={Checkout} />
+      
       <Route component={NotFound} />
     </Switch>
   );
@@ -52,10 +45,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
