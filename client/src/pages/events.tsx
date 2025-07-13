@@ -8,7 +8,7 @@ import EventCard from "@/components/event-card";
 import { Calendar, MapPin, Search, User } from "lucide-react";
 
 export default function Events() {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -78,14 +78,15 @@ export default function Events() {
                 )}
                 <Button 
                   size="sm"
-                  onClick={() => window.location.href = "/api/logout"}
+                  onClick={() => logoutMutation.mutate()}
                   variant="outline"
+                  disabled={logoutMutation.isPending}
                 >
-                  Logout
+                  {logoutMutation.isPending ? "Signing out..." : "Logout"}
                 </Button>
               </div>
             ) : (
-              <Button onClick={() => window.location.href = '/api/login'}>
+              <Button onClick={() => window.location.href = '/auth'}>
                 Sign In
               </Button>
             )}
