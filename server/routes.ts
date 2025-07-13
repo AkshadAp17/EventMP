@@ -59,10 +59,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/events', async (req, res) => {
     try {
       const { search, category, status } = req.query;
+      
+      // For non-admin users, default to showing only active events
+      let defaultStatus = status as string;
+      if (!req.user?.isAdmin && !status) {
+        defaultStatus = 'active';
+      }
+      
       const events = await storage.getEvents({
         search: search as string,
         category: category as string,
-        status: status as string,
+        status: defaultStatus,
       });
       res.json(events);
     } catch (error) {

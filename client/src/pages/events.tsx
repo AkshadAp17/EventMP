@@ -4,8 +4,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import EventCard from "@/components/event-card";
-import { Calendar, MapPin, Search, User } from "lucide-react";
+import { Calendar, MapPin, Search, User, Bell, Settings, LogOut, Shield, MoreVertical } from "lucide-react";
 
 export default function Events() {
   const { user, logoutMutation } = useAuth();
@@ -63,31 +65,100 @@ export default function Events() {
             </div>
             {user ? (
               <div className="flex items-center space-x-3">
-                <img 
-                  src={user.profileImageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user.firstName} ${user.lastName}`}
-                  alt="User Avatar" 
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <span className="text-sm font-medium text-slate-700">
-                  {user.firstName} {user.lastName}
-                </span>
-                {user.isAdmin && (
-                  <Button 
-                    size="sm"
-                    onClick={() => window.location.href = "/admin"}
-                    variant="outline"
-                  >
-                    Admin Panel
-                  </Button>
-                )}
-                <Button 
-                  size="sm"
-                  onClick={() => logoutMutation.mutate()}
-                  variant="outline"
-                  disabled={logoutMutation.isPending}
-                >
-                  {logoutMutation.isPending ? "Signing out..." : "Logout"}
-                </Button>
+                {/* Notifications */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="relative">
+                      <Bell className="h-5 w-5" />
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs">
+                        3
+                      </Badge>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">Event Registration Confirmed</p>
+                        <p className="text-xs text-slate-500">Your booking for "Tech Conference 2024" has been confirmed</p>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">New Event Available</p>
+                        <p className="text-xs text-slate-500">Check out the new workshop happening this weekend</p>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">Event Reminder</p>
+                        <p className="text-xs text-slate-500">Your event starts in 2 hours</p>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* User Profile Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 hover:bg-slate-100">
+                      <img 
+                        src={user.profileImageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user.firstName} ${user.lastName}`}
+                        alt="User Avatar" 
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                      <span className="text-sm font-medium text-slate-700 hidden md:block">
+                        {user.firstName} {user.lastName}
+                      </span>
+                      <MoreVertical className="h-4 w-4 text-slate-400" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
+                        <p className="text-xs text-slate-500">{user.email}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      <span>My Tickets</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    
+                    {user.isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => window.location.href = "/admin"}>
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Admin Dashboard</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => logoutMutation.mutate()}
+                      disabled={logoutMutation.isPending}
+                      className="text-red-600"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>{logoutMutation.isPending ? "Signing out..." : "Sign Out"}</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ) : (
               <Button onClick={() => window.location.href = '/auth'}>
