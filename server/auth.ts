@@ -62,10 +62,10 @@ export function setupAuth(app: Express) {
     passport.use(
       new Auth0Strategy(
         {
-          domain: process.env.AUTH0_DOMAIN,
-          clientID: process.env.AUTH0_CLIENT_ID,
-          clientSecret: process.env.AUTH0_CLIENT_SECRET,
-          callbackURL: process.env.AUTH0_CALLBACK_URL || "/api/auth/callback",
+          domain: process.env.AUTH0_DOMAIN?.trim(),
+          clientID: process.env.AUTH0_CLIENT_ID?.trim(),
+          clientSecret: process.env.AUTH0_CLIENT_SECRET?.trim(),
+          callbackURL: `${process.env.AUTH0_BASE_URL}/api/auth/callback`,
         },
         async (accessToken, refreshToken, extraParams, profile, done) => {
           try {
