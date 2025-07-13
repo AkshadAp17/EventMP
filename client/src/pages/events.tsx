@@ -10,16 +10,20 @@ import { Calendar, MapPin, Search, User } from "lucide-react";
 export default function Events() {
   const { user, logoutMutation } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
 
   const { data: events, isLoading } = useQuery({
-    queryKey: ["/api/events", { search: searchQuery, category: selectedCategory, status: selectedStatus }],
+    queryKey: ["/api/events", { 
+      search: searchQuery || undefined, 
+      category: selectedCategory === "all" ? undefined : selectedCategory, 
+      status: selectedStatus === "all" ? undefined : selectedStatus 
+    }],
     retry: false,
   });
 
   const categories = [
-    { value: "", label: "All Categories" },
+    { value: "all", label: "All Categories" },
     { value: "conference", label: "Conference" },
     { value: "workshop", label: "Workshop" },
     { value: "festival", label: "Festival" },
@@ -128,7 +132,7 @@ export default function Events() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="upcoming">Upcoming</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
@@ -139,8 +143,8 @@ export default function Events() {
               variant="outline" 
               onClick={() => {
                 setSearchQuery("");
-                setSelectedCategory("");
-                setSelectedStatus("");
+                setSelectedCategory("all");
+                setSelectedStatus("all");
               }}
             >
               Clear Filters
