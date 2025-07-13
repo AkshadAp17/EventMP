@@ -95,15 +95,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const eventData = insertEventSchema.parse({
+      // Debug and convert data types properly
+      console.log('Raw request body:', req.body);
+      
+      const processedData = {
         ...req.body,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        ticketPrice: req.body.ticketPrice.toString(),
+        maxAttendees: parseInt(req.body.maxAttendees.toString()),
         createdBy: req.user.id,
-      });
+      };
+      
+      console.log('Processed data:', processedData);
+
+      const eventData = insertEventSchema.parse(processedData);
       
       const event = await storage.createEvent(eventData);
       res.status(201).json(event);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
         return res.status(400).json({ message: "Invalid event data", errors: error.errors });
       }
       console.error("Error creating event:", error);
