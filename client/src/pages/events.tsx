@@ -253,7 +253,7 @@ export default function Events() {
               {/* Event Count Badge */}
               <div className="ml-auto">
                 <Badge variant="secondary" className="px-3 py-1 text-sm">
-                  {events?.length || 0} Events Found
+                  {Array.isArray(events) ? events.length : 0} Events Found
                 </Badge>
               </div>
             </div>
@@ -278,9 +278,9 @@ export default function Events() {
                 </div>
               ))}
             </div>
-          ) : events && events.length > 0 ? (
+          ) : events && Array.isArray(events) && events.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {events.map((event: any) => (
+              {events.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
             </div>

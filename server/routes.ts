@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import passport from "passport";
 import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
+import { setupAuth0 } from "./auth0";
 import { insertEventSchema, insertBookingSchema } from "@shared/schema";
 import { z } from "zod";
 import nodemailer from "nodemailer";
@@ -34,8 +35,21 @@ const isAuthenticated = (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  setupAuth(app);
+  // Check if Auth0 is configured
+  const isAuth0Configured = !!(
+    process.env.AUTH0_DOMAIN &&
+    process.env.AUTH0_CLIENT_ID &&
+    process.env.AUTH0_CLIENT_SECRET &&
+    process.env.AUTH0_BASE_URL
+  );
+
+  if (isAuth0Configured) {
+    console.log('Setting up Auth0 authentication...');
+    setupAuth0(app);
+  } else {
+    console.log('Auth0 not configured, using Replit authentication...');
+    setupAuth(app);
+  }
 
   // Create sample events on startup
   try {
