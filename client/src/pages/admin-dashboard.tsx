@@ -9,6 +9,148 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, DollarSign, TrendingUp, Plus, Download, Mail, BarChart3 } from "lucide-react";
 
+// Attendees Table Component
+function AttendeesTable() {
+  const { data: bookings } = useQuery({
+    queryKey: ["/api/bookings"],
+    retry: false,
+  });
+
+  return (
+    <div className="overflow-x-auto">
+      {bookings && bookings.length > 0 ? (
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b border-slate-200">
+              <th className="text-left p-4 font-semibold text-slate-700">Name</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Email</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Event</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Tickets</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Status</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.map((booking: any) => (
+              <tr key={booking.id} className="border-b border-slate-100 hover:bg-slate-50">
+                <td className="p-4">
+                  <p className="font-semibold text-slate-800">{booking.attendeeName}</p>
+                </td>
+                <td className="p-4">
+                  <p className="text-sm text-slate-800">{booking.attendeeEmail}</p>
+                </td>
+                <td className="p-4">
+                  <p className="text-sm text-slate-800">{booking.event?.name || 'Unknown Event'}</p>
+                </td>
+                <td className="p-4">
+                  <p className="text-sm text-slate-800">{booking.quantity}</p>
+                </td>
+                <td className="p-4">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {booking.status}
+                  </span>
+                </td>
+                <td className="p-4">
+                  <p className="text-sm text-slate-800">
+                    {new Date(booking.createdAt).toLocaleDateString()}
+                  </p>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="text-center py-12">
+          <Users className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+          <h3 className="text-lg font-medium text-slate-800 mb-2">No attendees yet</h3>
+          <p className="text-slate-600">Attendees will appear here once events are booked</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Tickets Table Component
+function TicketsTable() {
+  const { data: bookings } = useQuery({
+    queryKey: ["/api/bookings"],
+    retry: false,
+  });
+
+  return (
+    <div className="overflow-x-auto">
+      {bookings && bookings.length > 0 ? (
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b border-slate-200">
+              <th className="text-left p-4 font-semibold text-slate-700">Booking ID</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Event</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Attendee</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Quantity</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Amount</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Status</th>
+              <th className="text-left p-4 font-semibold text-slate-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.map((booking: any) => (
+              <tr key={booking.id} className="border-b border-slate-100 hover:bg-slate-50">
+                <td className="p-4">
+                  <p className="font-mono text-sm text-slate-800">{booking.bookingReference}</p>
+                </td>
+                <td className="p-4">
+                  <p className="text-sm text-slate-800">{booking.event?.name || 'Unknown Event'}</p>
+                </td>
+                <td className="p-4">
+                  <div>
+                    <p className="font-semibold text-slate-800">{booking.attendeeName}</p>
+                    <p className="text-xs text-slate-600">{booking.attendeeEmail}</p>
+                  </div>
+                </td>
+                <td className="p-4">
+                  <p className="text-sm text-slate-800">{booking.quantity}</p>
+                </td>
+                <td className="p-4">
+                  <p className="text-sm font-medium text-slate-800">${booking.totalAmount}</p>
+                </td>
+                <td className="p-4">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {booking.status}
+                  </span>
+                </td>
+                <td className="p-4">
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline">View</Button>
+                    {booking.status === 'pending' && (
+                      <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50">
+                        Confirm
+                      </Button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="text-center py-12">
+          <Calendar className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+          <h3 className="text-lg font-medium text-slate-800 mb-2">No tickets yet</h3>
+          <p className="text-slate-600">Ticket bookings will appear here once events are booked</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type DashboardStats = {
   totalEvents: number;
   totalAttendees: number;
@@ -300,27 +442,205 @@ export default function AdminDashboard() {
 
             <Card>
               <CardContent className="p-6">
-                <div className="text-center text-slate-600">
-                  Events management interface would be implemented here.
-                  This would include event listing, editing, and deletion functionality.
+                <div className="space-y-4">
+                  {events && events.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-200">
+                            <th className="text-left p-4 font-semibold text-slate-700">Event</th>
+                            <th className="text-left p-4 font-semibold text-slate-700">Date</th>
+                            <th className="text-left p-4 font-semibold text-slate-700">Location</th>
+                            <th className="text-left p-4 font-semibold text-slate-700">Attendees</th>
+                            <th className="text-left p-4 font-semibold text-slate-700">Price</th>
+                            <th className="text-left p-4 font-semibold text-slate-700">Status</th>
+                            <th className="text-left p-4 font-semibold text-slate-700">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {events.map((event: any) => (
+                            <tr key={event.id} className="border-b border-slate-100 hover:bg-slate-50">
+                              <td className="p-4">
+                                <div className="flex items-center space-x-3">
+                                  <img 
+                                    src={event.imageUrl || `https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60`}
+                                    alt={event.name}
+                                    className="w-12 h-12 rounded-lg object-cover"
+                                  />
+                                  <div>
+                                    <h4 className="font-semibold text-slate-800">{event.name}</h4>
+                                    <p className="text-sm text-slate-600">{event.category}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="text-sm">
+                                  <p className="font-medium text-slate-800">
+                                    {new Date(event.startDate).toLocaleDateString()}
+                                  </p>
+                                  <p className="text-slate-600">
+                                    {new Date(event.startDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <p className="text-sm text-slate-800">{event.location}</p>
+                              </td>
+                              <td className="p-4">
+                                <p className="text-sm text-slate-800">
+                                  {event.currentAttendees || 0} / {event.maxAttendees}
+                                </p>
+                              </td>
+                              <td className="p-4">
+                                <p className="text-sm font-medium text-slate-800">${event.ticketPrice}</p>
+                              </td>
+                              <td className="p-4">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  event.status === 'active' ? 'bg-green-100 text-green-800' :
+                                  event.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                                  event.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {event.status}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex space-x-2">
+                                  <Button size="sm" variant="outline">Edit</Button>
+                                  <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50">
+                                    Delete
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Calendar className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                      <h3 className="text-lg font-medium text-slate-800 mb-2">No events yet</h3>
+                      <p className="text-slate-600 mb-4">Create your first event to get started</p>
+                      <Button 
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="bg-primary-500 hover:bg-primary-600"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Event
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </main>
         )}
 
-        {/* Other tabs would be implemented similarly */}
-        {(activeTab === "attendees" || activeTab === "tickets" || activeTab === "analytics") && (
+        {/* Attendees Tab */}
+        {activeTab === "attendees" && (
           <main className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">Attendee Management</h2>
+              <div className="flex space-x-3">
+                <Button variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Data
+                </Button>
+                <Button variant="outline">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Send Notification
+                </Button>
+              </div>
+            </div>
+
             <Card>
               <CardContent className="p-6">
-                <div className="text-center text-slate-600">
-                  {activeTab === "attendees" && "Attendee management interface would be implemented here."}
-                  {activeTab === "tickets" && "Ticket management interface would be implemented here."}
-                  {activeTab === "analytics" && "Analytics and reporting interface would be implemented here."}
-                </div>
+                <AttendeesTable />
               </CardContent>
             </Card>
+          </main>
+        )}
+
+        {/* Tickets Tab */}
+        {activeTab === "tickets" && (
+          <main className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">Ticket Management</h2>
+              <div className="flex space-x-3">
+                <Button variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Tickets
+                </Button>
+              </div>
+            </div>
+
+            <Card>
+              <CardContent className="p-6">
+                <TicketsTable />
+              </CardContent>
+            </Card>
+          </main>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === "analytics" && (
+          <main className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">Analytics & Reports</h2>
+              <div className="flex space-x-3">
+                <Button variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Report
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Event Performance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Most Popular Event</span>
+                      <span className="font-semibold">Tech Conference 2024</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Average Attendance Rate</span>
+                      <span className="font-semibold">78%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Revenue Growth</span>
+                      <span className="font-semibold text-green-600">+15%</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Monthly Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Events This Month</span>
+                      <span className="font-semibold">{events?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">New Registrations</span>
+                      <span className="font-semibold">{stats?.totalAttendees || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Revenue This Month</span>
+                      <span className="font-semibold">${stats?.totalRevenue?.toLocaleString() || 0}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </main>
         )}
 

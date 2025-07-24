@@ -28,10 +28,19 @@ transporter.verify((error, success) => {
 
 // Simple auth middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
+  // Check session-based authentication
+  const userId = (req.session as any)?.userId;
+  if (userId) {
+    req.user = (req.session as any).user;
+    return next();
   }
-  next();
+  
+  // Check passport-based authentication
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  
+  return res.status(401).json({ message: "Unauthorized" });
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -83,6 +92,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authProvider: "local",
       });
 
+      // Set up session after registration
+      (req.session as any).userId = user.id;
+      (req.session as any).user = user;
+
       res.status(201).json(user);
     } catch (error) {
       console.error("Registration error:", error);
@@ -103,6 +116,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      // Set up session after successful login
+      (req.session as any).userId = user.id;
+      (req.session as any).user = user;
+      req.user = user; // Set user on request object for immediate use
+
       // For simplified demo, we'll check if it's the demo admin account
       if (email === "admin@eventmaster.com" && password === "admin123") {
         res.json(user);
@@ -117,6 +135,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/logout', (req, res) => {
+    // Clear session
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error('Session destruction error:', err);
+      }
+    });
     res.json({ message: "Logged out successfully" });
   });
 
@@ -129,27 +153,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Auth routes - handle both Auth0 and local auth
-  app.get('/api/user', (req: any, res, next) => {
-    // If Auth0 is configured and user is authenticated via Auth0
-    if (isAuth0Configured && req.oidc?.isAuthenticated()) {
-      return next();
-    }
-    // Otherwise use local authentication
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    next();
-  }, async (req: any, res) => {
+  app.get('/api/user', async (req: any, res) => {
     try {
       let user;
       
-      // Handle Auth0 user
+      // Check session-based authentication first
+      const userId = (req.session as any)?.userId;
+      if (userId) {
+        user = (req.session as any).user;
+        if (user) {
+          return res.json(user);
+        }
+      }
+      
+      // If Auth0 is configured and user is authenticated via Auth0
       if (isAuth0Configured && req.oidc?.isAuthenticated()) {
         const auth0User = req.oidc.user;
         user = await storage.getUserByEmail(auth0User.email);
         
         if (!user) {
-          // Create new user from Auth0 profile
           user = await storage.createUser({
             email: auth0User.email,
             firstName: auth0User.given_name || auth0User.name?.split(' ')[0] || '',
@@ -158,12 +180,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isAdmin: false,
           });
         }
-      } else {
-        // Handle local user
-        user = await storage.getUser(req.user.id);
+        return res.json(user);
       }
       
-      res.json(user);
+      // Check passport-based authentication
+      if (req.isAuthenticated && req.isAuthenticated()) {
+        user = await storage.getUser(req.user.id);
+        return res.json(user);
+      }
+      
+      // No valid authentication found
+      return res.status(401).json({ message: "Unauthorized" });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
