@@ -25,52 +25,53 @@ export default function Events() {
   });
 
   const categories = [
-    { value: "all", label: "All Categories" },
-    { value: "conference", label: "Conference" },
-    { value: "workshop", label: "Workshop" },
-    { value: "festival", label: "Festival" },
-    { value: "meetup", label: "Meetup" },
-    { value: "seminar", label: "Seminar" },
+    { value: "all", label: "All Tech Events" },
+    { value: "conference", label: "Tech Conference" },
+    { value: "workshop", label: "Coding Workshop" },
+    { value: "meetup", label: "Developer Meetup" },
+    { value: "seminar", label: "Tech Seminar" },
+    { value: "hackathon", label: "Hackathon" },
+    { value: "webinar", label: "Online Webinar" },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b border-slate-200 px-6 py-4">
+      <nav className="glass-effect sticky top-0 z-50 border-b border-border/50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-                <Calendar className="text-white h-5 w-5" />
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-glow animate-pulse-slow">
+                <Calendar className="text-primary-foreground h-6 w-6" />
               </div>
-              <h1 className="text-xl font-bold text-slate-800">EventMaster</h1>
+              <h1 className="text-2xl font-display font-bold gradient-text">EventMaster</h1>
             </div>
             <div className="hidden md:flex space-x-6">
-              <a href="/events" className="text-primary-600 font-medium">Events</a>
-              {user && <a href="#" className="text-slate-600 hover:text-slate-800">My Tickets</a>}
-              <a href="#" className="text-slate-600 hover:text-slate-800">About</a>
-              <a href="#" className="text-slate-600 hover:text-slate-800">Contact</a>
+              <a href="/events" className="text-primary font-semibold">Events</a>
+              {user && <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">My Tickets</a>}
+              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">About</a>
+              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
             </div>
           </div>
           
           <div className="flex items-center space-x-4">
             <div className="relative">
               <Input 
-                placeholder="Search events..."
+                placeholder="Search technology events..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-64"
+                className="pl-10 w-72 h-11 rounded-xl border-2 focus:border-primary/50 transition-all"
               />
-              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             </div>
             {user ? (
               <div className="flex items-center space-x-3">
                 {/* Notifications */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="relative">
+                    <Button variant="ghost" size="sm" className="relative hover:bg-accent/20 rounded-xl">
                       <Bell className="h-5 w-5" />
-                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs">
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs bg-primary text-primary-foreground">
                         3
                       </Badge>
                     </Button>
@@ -161,7 +162,10 @@ export default function Events() {
                 </DropdownMenu>
               </div>
             ) : (
-              <Button onClick={() => window.location.href = '/auth'}>
+              <Button 
+                onClick={() => window.location.href = '/auth'}
+                className="bg-primary hover:bg-primary/90 rounded-xl px-6 py-2 transition-all duration-300 hover:scale-105 shadow-glow"
+              >
                 Sign In
               </Button>
             )}
@@ -170,56 +174,89 @@ export default function Events() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-50 to-indigo-100 py-16">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-accent/10"></div>
+        <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center">
-            <h1 className="text-5xl font-bold text-slate-800 mb-6">Discover Amazing Events</h1>
-            <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-              From conferences to concerts, find and book tickets for the best events in your area.
+            <div className="animate-float">
+              <h1 className="text-5xl md:text-6xl font-display font-bold gradient-text mb-8 leading-tight">
+                Technology Events
+                <br />
+                <span className="text-foreground">That Matter</span>
+              </h1>
+            </div>
+            <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto font-light leading-relaxed">
+              Discover cutting-edge tech conferences, workshops, and meetups. Stay ahead with the latest in AI, web development, cloud computing, and more.
             </p>
+            
+            {/* Quick Tech Categories */}
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              {[
+                { name: 'AI & ML', icon: '🤖', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+                { name: 'Web Dev', icon: '🌐', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+                { name: 'Cloud', icon: '☁️', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
+                { name: 'Mobile', icon: '📱', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+                { name: 'Security', icon: '🔒', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }
+              ].map((tech) => (
+                <div key={tech.name} className={`${tech.color} px-4 py-2 rounded-xl text-sm font-medium cursor-pointer hover:scale-105 transition-all duration-200`}>
+                  <span className="mr-2">{tech.icon}</span>
+                  {tech.name}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Filters */}
-      <section className="py-8 bg-white border-b border-slate-200">
+      {/* Enhanced Filters */}
+      <section className="py-8 border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="card-gradient rounded-2xl p-6 border border-border/50">
+            <div className="flex flex-wrap gap-4 items-center">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-52 h-11 rounded-xl border-2 focus:border-primary/50">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-52 h-11 rounded-xl border-2 focus:border-primary/50">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("all");
-                setSelectedStatus("all");
-              }}
-            >
-              Clear Filters
-            </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("all");
+                  setSelectedStatus("all");
+                }}
+                className="h-11 rounded-xl border-2 hover:bg-accent/20 transition-all duration-200"
+              >
+                Clear Filters
+              </Button>
+              
+              {/* Event Count Badge */}
+              <div className="ml-auto">
+                <Badge variant="secondary" className="px-3 py-1 text-sm">
+                  {events?.length || 0} Events Found
+                </Badge>
+              </div>
+            </div>
           </div>
         </div>
       </section>
