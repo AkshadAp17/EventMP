@@ -150,7 +150,7 @@ export default function EventDetails() {
                 </Button>
               </div>
             ) : (
-              <Button onClick={() => window.location.href = '/api/login'}>
+              <Button onClick={() => window.location.href = '/auth-choice'}>
                 Sign In
               </Button>
             )}

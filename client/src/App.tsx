@@ -12,6 +12,7 @@ import Events from "@/pages/events";
 import EventDetails from "@/pages/event-details";
 import Checkout from "@/pages/checkout";
 import AuthPage from "@/pages/auth-page";
+import AuthChoice from "@/pages/auth-choice";
 import type { User } from "@shared/schema";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/events" component={Events} />
       <Route path="/events/:id" component={EventDetails} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/auth-choice" component={AuthChoice} />
       
       {/* Protected routes */}
       <ProtectedRoute path="/admin" component={AdminDashboard} />

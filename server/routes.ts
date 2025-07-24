@@ -49,6 +49,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   } else {
     console.log('Auth0 not configured, using Replit authentication...');
     setupAuth(app);
+    
+    // Add fallback routes for Auth0 paths when Auth0 is not configured
+    app.get('/auth/login', (req, res) => {
+      res.redirect('/login');
+    });
+    
+    app.get('/auth/logout', (req, res) => {
+      res.redirect('/logout');
+    });
   }
 
   // Create sample events on startup
@@ -59,10 +68,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("Sample events may already exist or database not ready");
   }
 
-  // Auth routes
-  app.get('/api/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes - handle both Auth0 and local auth
+  app.get('/api/user', (req: any, res, next) => {
+    // If Auth0 is configured and user is authenticated via Auth0
+    if (isAuth0Configured && req.oidc?.isAuthenticated()) {
+      return next();
+    }
+    // Otherwise use local authentication
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  }, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.id);
+      let user;
+      
+      // Handle Auth0 user
+      if (isAuth0Configured && req.oidc?.isAuthenticated()) {
+        const auth0User = req.oidc.user;
+        user = await storage.getUserByEmail(auth0User.email);
+        
+        if (!user) {
+          // Create new user from Auth0 profile
+          user = await storage.createUser({
+            email: auth0User.email,
+            firstName: auth0User.given_name || auth0User.name?.split(' ')[0] || '',
+            lastName: auth0User.family_name || auth0User.name?.split(' ').slice(1).join(' ') || '',
+            profileImageUrl: auth0User.picture || null,
+            isAdmin: false,
+          });
+        }
+      } else {
+        // Handle local user
+        user = await storage.getUser(req.user.id);
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);

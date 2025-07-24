@@ -163,7 +163,7 @@ export default function Events() {
               </div>
             ) : (
               <Button 
-                onClick={() => window.location.href = '/auth'}
+                onClick={() => window.location.href = '/auth-choice'}
                 className="bg-primary hover:bg-primary/90 rounded-xl px-6 py-2 transition-all duration-300 hover:scale-105 shadow-glow"
               >
                 Sign In
