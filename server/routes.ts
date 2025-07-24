@@ -213,16 +213,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { search, category, status } = req.query;
       
+      // Check if user is admin via session or passport
+      const userId = (req.session as any)?.userId;
+      let isAdmin = false;
+      
+      if (userId) {
+        const sessionUser = (req.session as any)?.user;
+        isAdmin = sessionUser?.isAdmin || false;
+      } else if (req.user) {
+        isAdmin = req.user.isAdmin || false;
+      }
+      
       // For non-admin users, default to showing only active events
-      let defaultStatus = status as string;
-      if (!req.user?.isAdmin && !status) {
-        defaultStatus = 'active';
+      let finalStatus = status as string;
+      if (!isAdmin && !status) {
+        finalStatus = 'active';
       }
       
       const events = await storage.getEvents({
         search: search as string,
         category: category as string,
-        status: defaultStatus,
+        status: finalStatus,
       });
       res.json(events);
     } catch (error) {

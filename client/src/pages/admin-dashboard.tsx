@@ -197,8 +197,10 @@ export default function AdminDashboard() {
     },
   });
 
+  // For admin dashboard, fetch all events regardless of status
   const { data: events } = useQuery({
     queryKey: ["/api/events"],
+    queryFn: () => fetch("/api/events?status=").then(res => res.json()),
     retry: false,
   });
 
