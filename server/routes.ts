@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import passport from "passport";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth } from "./replitAuth";
 import { insertEventSchema, insertBookingSchema } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";

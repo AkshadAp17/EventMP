@@ -103,12 +103,11 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
 }));
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  email: true,
-  firstName: true,
-  lastName: true,
-  profileImageUrl: true,
-  isAdmin: true,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  stripeCustomerId: true,
 });
 
 export const insertEventSchema = createInsertSchema(events).omit({

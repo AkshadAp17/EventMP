@@ -18,8 +18,8 @@ export interface IStorage {
   // User operations (supports Auth0 and local auth)
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
-  createUser(user: UpsertUser): Promise<User>;
+  upsertUser(user: Partial<UpsertUser> & { id: string }): Promise<User>;
+  createUser(user: Partial<UpsertUser> & { email: string }): Promise<User>;
   
   // Event operations
   createEvent(event: InsertEvent): Promise<Event>;
@@ -60,7 +60,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async upsertUser(userData: UpsertUser & { id: string }): Promise<User> {
+  async upsertUser(userData: Partial<UpsertUser> & { id: string }): Promise<User> {
     const [user] = await db
       .insert(users)
       .values(userData)
@@ -75,8 +75,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(userData: UpsertUser): Promise<User> {
-    const id = userData.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  async createUser(userData: Partial<UpsertUser> & { email: string }): Promise<User> {
+    const id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const [user] = await db
       .insert(users)
       .values({ ...userData, id })

@@ -73,6 +73,78 @@ export async function setupAuth(app: Express) {
   app.use(passport.session());
 
   const config = await getOidcConfig();
+  
+  passport.use(
+    new Strategy(
+      {
+        config,
+        client_id: process.env.REPL_ID!,
+        redirect_uri: `${process.env.REPLIT_DOMAINS}/callback`,
+        response_type: "code",
+        scope: "email profile openid",
+        params: {
+          user_agent: "replit-ai",
+        },
+      },
+      (
+        tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+        done: (err: any, user?: any) => void
+      ) => {
+        updateUserSession({}, tokens);
+        
+        const claims = tokens.claims();
+        
+        upsertUser(claims).then(() => {
+          done(null, {
+            id: claims["sub"],
+            email: claims["email"],
+            firstName: claims["first_name"],
+            lastName: claims["last_name"],
+            profileImageUrl: claims["profile_image_url"],
+            claims,
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            expires_at: claims?.exp,
+          });
+        }).catch((err) => {
+          done(err);
+        });
+      }
+    )
+  );
+
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user || false);
+    } catch (error) {
+      done(error);
+    }
+  });
+
+  // Auth routes
+  app.get("/api/auth/login", passport.authenticate("openidconnect"));
+  
+  app.get(
+    "/callback",
+    passport.authenticate("openidconnect", { failureRedirect: "/api/auth/login" }),
+    (req, res) => {
+      res.redirect("/");
+    }
+  );
+
+  app.post("/api/auth/logout", (req: any, res) => {
+    req.logout((err: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Failed to logout" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
