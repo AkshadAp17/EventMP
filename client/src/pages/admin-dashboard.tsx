@@ -7,7 +7,7 @@ import AdminSidebar from "@/components/admin-sidebar";
 import CreateEventModal from "@/components/create-event-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, DollarSign, TrendingUp, Plus, Download, Mail, BarChart3 } from "lucide-react";
+import { Calendar, Users, DollarSign, TrendingUp, Plus, Download, Mail, BarChart3, CalendarDays, Filter, ArrowUpDown } from "lucide-react";
 
 // Attendees Table Component
 function AttendeesTable() {
@@ -163,6 +163,12 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  // Event filtering and sorting states
+  const [dateFilterFrom, setDateFilterFrom] = useState("");
+  const [dateFilterTo, setDateFilterTo] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -198,11 +204,50 @@ export default function AdminDashboard() {
   });
 
   // For admin dashboard, fetch all events regardless of status
-  const { data: events } = useQuery({
+  const { data: rawEvents } = useQuery({
     queryKey: ["/api/events"],
     queryFn: () => fetch("/api/events?status=").then(res => res.json()),
     retry: false,
   });
+
+  // Process and filter events
+  const events = rawEvents ? [...rawEvents]
+    .filter(event => {
+      // Date filtering
+      if (dateFilterFrom && dateFilterTo) {
+        const eventStart = new Date(event.startDate);
+        const filterFrom = new Date(dateFilterFrom);
+        const filterTo = new Date(dateFilterTo);
+        return eventStart >= filterFrom && eventStart <= filterTo;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const aVal = sortBy === 'createdAt' ? new Date(a.createdAt) : 
+                   sortBy === 'startDate' ? new Date(a.startDate) : 
+                   sortBy === 'name' ? a.name : a[sortBy];
+      const bVal = sortBy === 'createdAt' ? new Date(b.createdAt) : 
+                   sortBy === 'startDate' ? new Date(b.startDate) : 
+                   sortBy === 'name' ? b.name : b[sortBy];
+      
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    }) : [];
+
+  // Auto-set date range when filtering
+  const handleDateFromChange = (value: string) => {
+    setDateFilterFrom(value);
+    if (value && !dateFilterTo) {
+      // Auto-set end date to 7 days after start date
+      const startDate = new Date(value);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 7);
+      setDateFilterTo(endDate.toISOString().split('T')[0]);
+    }
+  };
 
   if (isLoading || !user) {
     return (
@@ -442,6 +487,75 @@ export default function AdminDashboard() {
               </Button>
             </div>
 
+            {/* Filters and Controls */}
+            <Card className="mb-6">
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Date Range Filter */}
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-slate-600" />
+                    <label className="text-sm font-medium text-slate-700">From:</label>
+                    <input
+                      type="date"
+                      value={dateFilterFrom}
+                      onChange={(e) => handleDateFromChange(e.target.value)}
+                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <label className="text-sm font-medium text-slate-700">To:</label>
+                    <input
+                      type="date"
+                      value={dateFilterTo}
+                      onChange={(e) => setDateFilterTo(e.target.value)}
+                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Sort Controls */}
+                  <div className="flex items-center gap-2">
+                    <ArrowUpDown className="w-4 h-4 text-slate-600" />
+                    <label className="text-sm font-medium text-slate-700">Sort by:</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="createdAt">Created Date</option>
+                      <option value="startDate">Event Date</option>
+                      <option value="name">Name</option>
+                      <option value="status">Status</option>
+                    </select>
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="px-3 py-1 border border-slate-300 rounded-md text-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
+                    </button>
+                  </div>
+
+                  {/* Clear Filters */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDateFilterFrom("");
+                      setDateFilterTo("");
+                      setSortBy("createdAt");
+                      setSortOrder("desc");
+                    }}
+                    className="ml-auto"
+                  >
+                    <Filter className="w-4 h-4 mr-2" />
+                    Clear Filters
+                  </Button>
+
+                  {/* Event Count */}
+                  <div className="text-sm text-slate-600">
+                    Showing {events?.length || 0} events
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -451,7 +565,8 @@ export default function AdminDashboard() {
                         <thead>
                           <tr className="border-b border-slate-200">
                             <th className="text-left p-4 font-semibold text-slate-700">Event</th>
-                            <th className="text-left p-4 font-semibold text-slate-700">Date</th>
+                            <th className="text-left p-4 font-semibold text-slate-700">Event Date</th>
+                            <th className="text-left p-4 font-semibold text-slate-700">Created</th>
                             <th className="text-left p-4 font-semibold text-slate-700">Location</th>
                             <th className="text-left p-4 font-semibold text-slate-700">Attendees</th>
                             <th className="text-left p-4 font-semibold text-slate-700">Price</th>
@@ -482,6 +597,16 @@ export default function AdminDashboard() {
                                   </p>
                                   <p className="text-slate-600">
                                     {new Date(event.startDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="text-sm">
+                                  <p className="font-medium text-slate-800">
+                                    {new Date(event.createdAt).toLocaleDateString()}
+                                  </p>
+                                  <p className="text-slate-600">
+                                    {new Date(event.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                   </p>
                                 </div>
                               </td>
