@@ -4,21 +4,21 @@ import { Calendar, MapPin, Search, Users, Star, Clock } from "lucide-react";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/30 to-primary/10">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b border-slate-200 px-6 py-4">
+      <nav className="glass-effect sticky top-0 z-50 border-b border-border/50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-              <Calendar className="text-white h-5 w-5" />
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-glow animate-pulse-slow">
+              <Calendar className="text-primary-foreground h-6 w-6" />
             </div>
-            <h1 className="text-xl font-bold text-slate-800">EventMaster</h1>
+            <h1 className="text-2xl font-display font-bold gradient-text">EventMaster</h1>
           </div>
           
           <div className="flex items-center space-x-4">
             <Button 
               onClick={() => window.location.href = '/auth'}
-              className="bg-primary-500 hover:bg-primary-600"
+              className="bg-primary hover:bg-primary/90 shadow-glow transition-all duration-300 hover:scale-105"
             >
               Sign In
             </Button>
@@ -27,33 +27,47 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h1 className="text-5xl font-bold text-slate-800 mb-6">
-            Discover Amazing Events
-          </h1>
-          <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-            From conferences to concerts, find and book tickets for the best events in your area.
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5"></div>
+        <div className="max-w-7xl mx-auto px-6 text-center relative">
+          <div className="animate-float">
+            <h1 className="text-6xl md:text-7xl font-display font-bold gradient-text mb-8 leading-tight">
+              Discover Amazing
+              <br />
+              <span className="text-foreground">Events</span>
+            </h1>
+          </div>
+          <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto font-light leading-relaxed">
+            From conferences to concerts, find and book tickets for the best events in your area with our premium platform.
           </p>
           
           {/* Event Search */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="card-gradient rounded-3xl shadow-2xl p-8 max-w-5xl mx-auto border border-border/50">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">What</label>
-                <Input placeholder="Event name or keyword" />
+                <label className="block text-sm font-semibold text-foreground mb-3">What</label>
+                <Input 
+                  placeholder="Event name or keyword" 
+                  className="h-12 rounded-xl border-2 focus:border-primary/50 transition-all"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Where</label>
-                <Input placeholder="City or venue" />
+                <label className="block text-sm font-semibold text-foreground mb-3">Where</label>
+                <Input 
+                  placeholder="City or venue" 
+                  className="h-12 rounded-xl border-2 focus:border-primary/50 transition-all"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">When</label>
-                <Input type="date" />
+                <label className="block text-sm font-semibold text-foreground mb-3">When</label>
+                <Input 
+                  type="date" 
+                  className="h-12 rounded-xl border-2 focus:border-primary/50 transition-all"
+                />
               </div>
               <div className="flex items-end">
-                <Button className="w-full bg-primary-500 hover:bg-primary-600">
-                  <Search className="w-4 h-4 mr-2" />
+                <Button className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl shadow-glow transition-all duration-300 hover:scale-105">
+                  <Search className="w-5 h-5 mr-2" />
                   Search Events
                 </Button>
               </div>
@@ -63,64 +77,64 @@ export default function Landing() {
       </section>
 
       {/* Features */}
-      <section className="py-16 bg-white">
+      <section className="py-24 bg-muted/30">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-800 mb-4">Why Choose EventMaster?</h2>
-            <p className="text-lg text-slate-600">Everything you need for seamless event discovery and booking</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-display font-bold gradient-text mb-6">Why Choose EventMaster?</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Everything you need for seamless event discovery and booking</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-blue-600" />
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 group-hover:bg-primary/20 group-hover:scale-110 shadow-glow">
+                <Search className="w-10 h-10 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-2">Easy Discovery</h3>
-              <p className="text-slate-600">Find events that match your interests with our powerful search and filtering tools.</p>
+              <h3 className="text-2xl font-display font-semibold text-foreground mb-4">Easy Discovery</h3>
+              <p className="text-muted-foreground leading-relaxed">Find events that match your interests with our powerful search and filtering tools.</p>
             </div>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-green-600" />
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 group-hover:bg-accent/30 group-hover:scale-110">
+                <Clock className="w-10 h-10 text-accent-foreground" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-2">Instant Booking</h3>
-              <p className="text-slate-600">Book your tickets instantly with our secure and fast checkout process.</p>
+              <h3 className="text-2xl font-display font-semibold text-foreground mb-4">Instant Booking</h3>
+              <p className="text-muted-foreground leading-relaxed">Book your tickets instantly with our secure email-based confirmation process.</p>
             </div>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-purple-600" />
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-secondary/50 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 group-hover:bg-secondary/70 group-hover:scale-110">
+                <Users className="w-10 h-10 text-secondary-foreground" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-2">Community</h3>
-              <p className="text-slate-600">Join a community of event enthusiasts and discover new experiences.</p>
+              <h3 className="text-2xl font-display font-semibold text-foreground mb-4">Community</h3>
+              <p className="text-muted-foreground leading-relaxed">Join a community of event enthusiasts and discover new experiences.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Popular Categories */}
-      <section className="py-16 bg-slate-50">
+      <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-800 mb-4">Popular Categories</h2>
-            <p className="text-lg text-slate-600">Explore events by category</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-display font-bold gradient-text mb-6">Popular Categories</h2>
+            <p className="text-xl text-muted-foreground">Explore events by category</p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {[
-              { name: "Business", icon: "💼" },
-              { name: "Music", icon: "🎵" },
-              { name: "Technology", icon: "💻" },
-              { name: "Health", icon: "❤️" },
-              { name: "Arts", icon: "🎨" },
-              { name: "Gaming", icon: "🎮" },
+              { name: "Business", icon: "💼", color: "bg-blue-50 hover:bg-blue-100" },
+              { name: "Music", icon: "🎵", color: "bg-purple-50 hover:bg-purple-100" },
+              { name: "Technology", icon: "💻", color: "bg-green-50 hover:bg-green-100" },
+              { name: "Health", icon: "❤️", color: "bg-red-50 hover:bg-red-100" },
+              { name: "Arts", icon: "🎨", color: "bg-yellow-50 hover:bg-yellow-100" },
+              { name: "Gaming", icon: "🎮", color: "bg-indigo-50 hover:bg-indigo-100" },
             ].map((category) => (
               <div
                 key={category.name}
-                className="bg-white rounded-xl shadow-sm p-6 text-center hover:shadow-md transition-shadow cursor-pointer"
+                className={`${category.color} dark:bg-card rounded-2xl shadow-sm p-6 text-center hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 border border-border/50`}
               >
-                <div className="text-3xl mb-3">{category.icon}</div>
-                <h3 className="font-semibold text-slate-800">{category.name}</h3>
+                <div className="text-4xl mb-4">{category.icon}</div>
+                <h3 className="font-semibold text-foreground">{category.name}</h3>
               </div>
             ))}
           </div>
@@ -128,7 +142,18 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-primary-500">
+      <section className="py-20 bg-primary text-primary-foreground relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-primary"></div>
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+          <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">Ready to Get Started?</h2>
+          <p className="text-xl mb-8 text-primary-foreground/90">Join thousands of event enthusiasts and start discovering amazing experiences.</p>
+          <Button 
+            onClick={() => window.location.href = '/events'}
+            className="bg-background text-foreground hover:bg-background/90 px-8 py-4 text-lg rounded-xl shadow-2xl transition-all duration-300 hover:scale-105"
+          >
+            Explore Events Now
+          </Button>
+        </div>
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Discover Events?</h2>
           <p className="text-xl text-blue-100 mb-8">
