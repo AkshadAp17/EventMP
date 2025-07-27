@@ -111,9 +111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      // Check credentials against environment variables
-      const adminEmail = process.env.ADMIN_EMAIL;
-      const adminPassword = process.env.ADMIN_PASSWORD;
+      // Check credentials against hardcoded admin and environment variables
+      const adminEmail = 'akshadapastambh37@gmail.com';
+      const adminPassword = 'Akshad@11';
       const demoEmail = process.env.DEMO_USER_EMAIL;
       const demoPassword = process.env.DEMO_USER_PASSWORD;
 
@@ -176,18 +176,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const createDefaultUsers = async () => {
     try {
       // Create admin user
-      const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail) {
-        const adminUser = await storage.getUserByEmail(adminEmail);
-        if (!adminUser) {
-          await storage.createUser({
-            email: adminEmail,
-            firstName: 'Admin',
-            lastName: 'User',
-            isAdmin: true,
-          });
-          console.log('Admin user created successfully');
-        }
+      const adminEmail = 'akshadapastambh37@gmail.com';
+      const adminUser = await storage.getUserByEmail(adminEmail);
+      if (!adminUser) {
+        await storage.createUser({
+          email: adminEmail,
+          firstName: 'Admin',
+          lastName: 'User',
+          isAdmin: true,
+        });
+        console.log('Admin user created successfully');
       }
 
       // Create demo user
