@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import EventCard from "@/components/event-card";
+import { NotificationBell } from "@/components/notification-center";
 import { Calendar, MapPin, Search, User, Bell, Settings, LogOut, Shield, MoreVertical } from "lucide-react";
 
 export default function Events() {
@@ -73,41 +74,10 @@ export default function Events() {
               />
               <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             </div>
+            
             {user ? (
               <div className="flex items-center space-x-3">
-                {/* Notifications */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="relative hover:bg-accent/20 rounded-xl">
-                      <Bell className="h-5 w-5" />
-                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs bg-primary text-primary-foreground">
-                        3
-                      </Badge>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80">
-                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">Event Registration Confirmed</p>
-                        <p className="text-xs text-slate-500">Your booking for "Tech Conference 2024" has been confirmed</p>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">New Event Available</p>
-                        <p className="text-xs text-slate-500">Check out the new workshop happening this weekend</p>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">Event Reminder</p>
-                        <p className="text-xs text-slate-500">Your event starts in 2 hours</p>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <NotificationBell />
 
                 {/* User Profile Menu */}
                 <DropdownMenu>

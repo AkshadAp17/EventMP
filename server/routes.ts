@@ -4,7 +4,7 @@ import passport from "passport";
 import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
 import { setupAuth0 } from "./auth0";
-import { insertEventSchema, insertBookingSchema } from "@shared/schema";
+import { insertEventSchema, insertBookingSchema, insertNotificationSchema, insertContactMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import nodemailer from "nodemailer";
 
@@ -493,6 +493,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error confirming payment:", error);
       res.status(500).json({ message: "Failed to confirm payment" });
+    }
+  });
+
+  // Contact form route
+  app.post('/api/contact', async (req, res) => {
+    try {
+      const contactData = insertContactMessageSchema.parse(req.body);
+      const contactMessage = await storage.createContactMessage(contactData);
+      
+      // Send notification email to admin
+      const adminEmail = process.env.EMAIL_USER;
+      const adminNotificationSubject = `New Contact Message from ${contactData.name}`;
+      const adminNotificationContent = `
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #8B5CF6; text-align: center;">New Contact Message</h2>
+          
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>Contact Details:</h3>
+            <p><strong>Name:</strong> ${contactData.name}</p>
+            <p><strong>Email:</strong> ${contactData.email}</p>
+            <p><strong>Subject:</strong> ${contactData.subject}</p>
+            <p><strong>Message:</strong></p>
+            <p style="white-space: pre-wrap;">${contactData.message}</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <p style="color: #6b7280;">Reply directly to this email to respond to the user.</p>
+          </div>
+        </div>
+      `;
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: adminEmail,
+        replyTo: contactData.email,
+        subject: adminNotificationSubject,
+        html: adminNotificationContent,
+      });
+
+      res.status(201).json({ message: "Contact message sent successfully" });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid contact data", errors: error.errors });
+      }
+      console.error("Error sending contact message:", error);
+      res.status(500).json({ message: "Failed to send contact message" });
+    }
+  });
+
+  // Notification routes
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const notifications = await storage.getNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.patch('/api/notifications/:id/read', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const notificationId = parseInt(req.params.id);
+      
+      const notification = await storage.markNotificationAsRead(notificationId, userId);
+      res.json(notification);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.patch('/api/notifications/mark-all-read', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      await storage.markAllNotificationsAsRead(userId);
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  app.delete('/api/notifications/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const notificationId = parseInt(req.params.id);
+      
+      await storage.deleteNotification(notificationId, userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ message: "Failed to delete notification" });
     }
   });
 

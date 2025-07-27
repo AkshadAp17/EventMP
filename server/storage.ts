@@ -2,6 +2,8 @@ import {
   users,
   events,
   bookings,
+  notifications,
+  contactMessages,
   type User,
   type UpsertUser,
   type Event,
@@ -10,6 +12,10 @@ import {
   type InsertBooking,
   type EventWithBookings,
   type BookingWithEvent,
+  type Notification,
+  type InsertNotification,
+  type ContactMessage,
+  type InsertContactMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and, or, ilike } from "drizzle-orm";
@@ -43,6 +49,18 @@ export interface IStorage {
     totalRevenue: number;
     conversionRate: number;
   }>;
+  
+  // Notification operations
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotifications(userId: string): Promise<Notification[]>;
+  markNotificationAsRead(id: number, userId: string): Promise<Notification>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  deleteNotification(id: number, userId: string): Promise<void>;
+  
+  // Contact message operations
+  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+  getContactMessages(): Promise<ContactMessage[]>;
+  updateContactMessageStatus(id: number, status: string): Promise<ContactMessage>;
   
   // Sample data
   createSampleEvents(): Promise<void>;
@@ -347,6 +365,64 @@ export class DatabaseStorage implements IStorage {
     for (const event of sampleEvents) {
       await db.insert(events).values(event).onConflictDoNothing();
     }
+  }
+
+  // Notification operations
+  async createNotification(notificationData: InsertNotification): Promise<Notification> {
+    const [notification] = await db.insert(notifications).values(notificationData).returning();
+    return notification;
+  }
+
+  async getNotifications(userId: string): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async markNotificationAsRead(id: number, userId: string): Promise<Notification> {
+    const [notification] = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
+      .returning();
+    return notification;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+  }
+
+  async deleteNotification(id: number, userId: string): Promise<void> {
+    await db
+      .delete(notifications)
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+  }
+
+  // Contact message operations
+  async createContactMessage(messageData: InsertContactMessage): Promise<ContactMessage> {
+    const [message] = await db.insert(contactMessages).values(messageData).returning();
+    return message;
+  }
+
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return await db
+      .select()
+      .from(contactMessages)
+      .orderBy(desc(contactMessages.createdAt));
+  }
+
+  async updateContactMessageStatus(id: number, status: string): Promise<ContactMessage> {
+    const [message] = await db
+      .update(contactMessages)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(contactMessages.id, id))
+      .returning();
+    return message;
   }
 
   private generateBookingReference(): string {
