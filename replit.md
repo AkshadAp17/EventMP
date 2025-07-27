@@ -17,6 +17,7 @@ Preferred communication style: Simple, everyday language.
 ✅ **API Endpoints** - Registration and login APIs working correctly
 ✅ **Server Setup** - Application running on port 5000 with all core functionality
 ✅ **Technology Focus** - Event management platform focusing on technology events
+✅ **Email Configuration** - Added Gmail SMTP configuration with user credentials for booking confirmations
 
 ## User Preferences
 
@@ -38,7 +39,7 @@ Event focus: Technology events (AI, web development, mobile, cloud computing, cy
 - **Runtime**: Node.js with Express.js framework
 - **Language**: TypeScript with ES modules
 - **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon serverless PostgreSQL
+- **Database Provider**: PostgreSQL with Replit hosting
 - **Authentication**: Replit Auth with OpenID Connect
 - **Session Management**: express-session with PostgreSQL store
 - **Payment Processing**: Stripe integration
