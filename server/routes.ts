@@ -417,6 +417,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single booking by ID
+  app.get('/api/bookings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      if (isNaN(bookingId)) {
+        return res.status(400).json({ message: "Invalid booking ID" });
+      }
+
+      const booking = await storage.getBooking(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Check if user can access this booking
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      // Admin can see any booking, users can only see their own
+      if (!user?.isAdmin && booking.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(booking);
+    } catch (error) {
+      console.error("Error fetching booking:", error);
+      res.status(500).json({ message: "Failed to fetch booking" });
+    }
+  });
+
   app.post('/api/bookings', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
