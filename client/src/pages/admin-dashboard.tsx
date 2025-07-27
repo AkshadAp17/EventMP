@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { Calendar, Users, DollarSign, TrendingUp, Plus, Download, Mail, BarChart3, CalendarDays, Filter, ArrowUpDown, Edit, Trash2, Eye } from "lucide-react";
 
 // Export Functions
@@ -698,9 +699,19 @@ export default function AdminDashboard() {
                             }`}>
                               {event.status}
                             </span>
-                            <p className="text-sm font-medium text-slate-800 mt-1">
-                              {event.currentAttendees} attendees
-                            </p>
+                            <div className="mt-2 w-32">
+                              <div className="flex justify-between text-xs text-slate-600 mb-1">
+                                <span>{event.currentAttendees}</span>
+                                <span>{event.maxAttendees}</span>
+                              </div>
+                              <Progress 
+                                value={(event.currentAttendees / event.maxAttendees) * 100} 
+                                className="h-2"
+                              />
+                              <p className="text-xs text-slate-500 mt-1">
+                                {Math.round((event.currentAttendees / event.maxAttendees) * 100)}% filled
+                              </p>
+                            </div>
                           </div>
                           </div>
                         ))
@@ -927,9 +938,19 @@ export default function AdminDashboard() {
                                 <p className="text-sm text-slate-800">{event.location}</p>
                               </td>
                               <td className="p-4">
-                                <p className="text-sm text-slate-800">
-                                  {event.currentAttendees || 0} / {event.maxAttendees}
-                                </p>
+                                <div className="w-24">
+                                  <div className="flex justify-between text-xs text-slate-600 mb-1">
+                                    <span>{event.currentAttendees || 0}</span>
+                                    <span>{event.maxAttendees}</span>
+                                  </div>
+                                  <Progress 
+                                    value={((event.currentAttendees || 0) / event.maxAttendees) * 100} 
+                                    className="h-2"
+                                  />
+                                  <p className="text-xs text-slate-500 mt-1 text-center">
+                                    {Math.round(((event.currentAttendees || 0) / event.maxAttendees) * 100)}%
+                                  </p>
+                                </div>
                               </td>
                               <td className="p-4">
                                 <p className="text-sm font-medium text-slate-800">${event.ticketPrice}</p>
