@@ -546,12 +546,12 @@ export default function AdminDashboard() {
       <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} user={user} />
       
       {/* Main Content */}
-      <div className="lg:ml-64">
+      <div className="lg:ml-64 min-h-screen">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-20">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-slate-800">
+          <div className="flex items-center justify-between px-4 lg:px-6 py-4">
+            <div className="flex items-center space-x-2 lg:space-x-4">
+              <h1 className="text-lg lg:text-2xl font-bold text-slate-800 truncate">
                 {activeTab === "dashboard" ? "Dashboard" : 
                  activeTab === "events" ? "Event Management" :
                  activeTab === "attendees" ? "Attendee Management" :
@@ -565,13 +565,13 @@ export default function AdminDashboard() {
             <div className="flex items-center space-x-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-3 hover:bg-slate-100">
+                  <Button variant="ghost" className="flex items-center space-x-2 lg:space-x-3 hover:bg-slate-100">
                     <img 
                       src={user.profileImageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user.firstName} ${user.lastName}`} 
                       alt="User Avatar" 
                       className="w-8 h-8 rounded-full object-cover"
                     />
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-sm font-medium text-slate-700 hidden sm:block">
                       {user.firstName} {user.lastName}
                     </span>
                   </Button>
@@ -619,9 +619,9 @@ export default function AdminDashboard() {
 
         {/* Dashboard Content */}
         {activeTab === "dashboard" && (
-          <main className="p-6">
+          <main className="p-4 lg:p-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -704,7 +704,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Recent Events & Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
               <div className="lg:col-span-2">
                 <Card>
                   <CardHeader>
@@ -841,9 +841,9 @@ export default function AdminDashboard() {
 
         {/* Events Tab */}
         {activeTab === "events" && (
-          <main className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-800">Event Management</h2>
+          <main className="p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <h2 className="text-xl lg:text-2xl font-bold text-slate-800">Event Management</h2>
               <Button 
                 onClick={() => setIsCreateModalOpen(true)}
                 className="bg-primary-500 hover:bg-primary-600"
@@ -856,46 +856,54 @@ export default function AdminDashboard() {
             {/* Filters and Controls */}
             <Card className="mb-6">
               <CardContent className="p-4">
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-4">
                   {/* Date Range Filter */}
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-slate-600" />
-                    <label className="text-sm font-medium text-slate-700">From:</label>
-                    <input
-                      type="date"
-                      value={dateFilterFrom}
-                      onChange={(e) => handleDateFromChange(e.target.value)}
-                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <label className="text-sm font-medium text-slate-700">To:</label>
-                    <input
-                      type="date"
-                      value={dateFilterTo}
-                      onChange={(e) => setDateFilterTo(e.target.value)}
-                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4 text-slate-600" />
+                      <label className="text-sm font-medium text-slate-700">From:</label>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <input
+                        type="date"
+                        value={dateFilterFrom}
+                        onChange={(e) => handleDateFromChange(e.target.value)}
+                        className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <label className="text-sm font-medium text-slate-700">To:</label>
+                      <input
+                        type="date"
+                        value={dateFilterTo}
+                        onChange={(e) => setDateFilterTo(e.target.value)}
+                        className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
 
                   {/* Sort Controls */}
-                  <div className="flex items-center gap-2">
-                    <ArrowUpDown className="w-4 h-4 text-slate-600" />
-                    <label className="text-sm font-medium text-slate-700">Sort by:</label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="createdAt">Created Date</option>
-                      <option value="startDate">Event Date</option>
-                      <option value="name">Name</option>
-                      <option value="status">Status</option>
-                    </select>
-                    <button
-                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                      className="px-3 py-1 border border-slate-300 rounded-md text-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
-                    </button>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpDown className="w-4 h-4 text-slate-600" />
+                      <label className="text-sm font-medium text-slate-700">Sort by:</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="createdAt">Created Date</option>
+                        <option value="startDate">Event Date</option>
+                        <option value="name">Name</option>
+                        <option value="status">Status</option>
+                      </select>
+                      <button
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                        className="px-3 py-1 border border-slate-300 rounded-md text-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Clear Filters */}

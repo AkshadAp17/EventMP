@@ -22,6 +22,9 @@ Preferred communication style: Simple, everyday language.
 ✅ **UI Improvements** - Enhanced dashboard with visual progress indicators for event capacity
 ✅ **User Menu** - Added dropdown menu with profile access and logout functionality
 ✅ **Progress Bars** - Implemented capacity fill visualization across dashboard and events table
+✅ **Mobile Responsive Design** - Made landing page, events page, and admin dashboard responsive for mobile devices
+✅ **Email Notifications** - Added proper booking confirmation and cancellation email templates with rich HTML styling
+✅ **Booking Cancellation** - Implemented booking cancellation functionality with automatic email notifications
 
 ## User Preferences
 

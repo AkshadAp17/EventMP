@@ -26,6 +26,103 @@ transporter.verify((error, success) => {
   }
 });
 
+// Email helper functions
+const sendBookingConfirmationEmail = async (booking: any, event: any) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER || 'akshadapastambh37@gmail.com',
+    to: booking.attendeeEmail,
+    subject: `🎉 Booking Confirmed - ${event.name}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc;">
+        <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #8B5CF6; margin: 0; font-size: 28px;">🎉 Booking Confirmed!</h1>
+            <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 16px;">Your ticket has been successfully confirmed</p>
+          </div>
+          
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #374151; margin: 0 0 15px 0;">Event Details:</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Event:</td><td style="padding: 5px 0; color: #374151; font-weight: 600;">${event.name}</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Date:</td><td style="padding: 5px 0; color: #374151;">${new Date(event.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Time:</td><td style="padding: 5px 0; color: #374151;">${new Date(event.startDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Location:</td><td style="padding: 5px 0; color: #374151;">${event.location}</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Tickets:</td><td style="padding: 5px 0; color: #374151; font-weight: 600;">${booking.quantity} ticket(s)</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Total Paid:</td><td style="padding: 5px 0; color: #10b981; font-weight: 700; font-size: 18px;">$${booking.totalAmount}</td></tr>
+            </table>
+          </div>
+
+          <div style="background: #dcfce7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+            <p style="color: #059669; margin: 0; font-weight: 600;">Booking Reference: ${booking.bookingReference}</p>
+            <p style="color: #059669; margin: 5px 0 0 0; font-size: 14px;">Please keep this reference number for your records</p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <p style="color: #6b7280; margin: 0; font-size: 14px;">Thank you for choosing EventMaster!</p>
+            <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 14px;">We look forward to seeing you at the event.</p>
+          </div>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Booking confirmation email sent successfully to:', booking.attendeeEmail);
+    return true;
+  } catch (error) {
+    console.error('Error sending booking confirmation email:', error);
+    return false;
+  }
+};
+
+const sendBookingCancellationEmail = async (booking: any, event: any) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER || 'akshadapastambh37@gmail.com',
+    to: booking.attendeeEmail,
+    subject: `❌ Booking Cancelled - ${event.name}`,
+    html: `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc;">
+        <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #dc2626; margin: 0; font-size: 28px;">❌ Booking Cancelled</h1>
+            <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 16px;">Your booking has been cancelled</p>
+          </div>
+          
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #374151; margin: 0 0 15px 0;">Cancelled Booking Details:</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Event:</td><td style="padding: 5px 0; color: #374151; font-weight: 600;">${event.name}</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Date:</td><td style="padding: 5px 0; color: #374151;">${new Date(event.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Booking Reference:</td><td style="padding: 5px 0; color: #374151; font-weight: 600;">${booking.bookingReference}</td></tr>
+              <tr><td style="padding: 5px 0; color: #6b7280; font-weight: 500;">Refund Amount:</td><td style="padding: 5px 0; color: #dc2626; font-weight: 700; font-size: 18px;">$${booking.totalAmount}</td></tr>
+            </table>
+          </div>
+
+          <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+            <p style="color: #dc2626; margin: 0; font-weight: 600;">Refund Processing</p>
+            <p style="color: #dc2626; margin: 5px 0 0 0; font-size: 14px;">Your refund will be processed within 3-5 business days</p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <p style="color: #6b7280; margin: 0; font-size: 14px;">We're sorry to see you go!</p>
+            <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 14px;">Feel free to browse our other events at EventMaster.</p>
+          </div>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Booking cancellation email sent successfully to:', booking.attendeeEmail);
+    return true;
+  } catch (error) {
+    console.error('Error sending booking cancellation email:', error);
+    return false;
+  }
+};
+
 // Simple auth middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
   // Check session-based authentication
@@ -475,6 +572,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const booking = await storage.createBooking(bookingData);
+      
+      // Send confirmation email after booking creation
+      if (booking && booking.event) {
+        await sendBookingConfirmationEmail(booking, booking.event);
+      }
+      
       res.status(201).json(booking);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -660,6 +763,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  // Cancel booking route
+  app.delete('/api/bookings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      // Get booking details before deletion for email
+      const booking = await storage.getBooking(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+      
+      // Check authorization
+      const user = await storage.getUser(userId);
+      if (!user?.isAdmin && booking.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Update booking status to cancelled
+      await storage.updateBookingStatus(bookingId, 'cancelled');
+      
+      // Send cancellation email
+      if (booking && booking.event) {
+        await sendBookingCancellationEmail(booking, booking.event);
+      }
+      
+      res.json({ message: "Booking cancelled successfully" });
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      res.status(500).json({ message: "Failed to cancel booking" });
     }
   });
 

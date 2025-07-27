@@ -47,16 +47,16 @@ export default function Events() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5">
       {/* Navigation */}
-      <nav className="glass-effect sticky top-0 z-50 border-b border-border/50 px-6 py-4">
+      <nav className="glass-effect sticky top-0 z-50 border-b border-border/50 px-4 lg:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-glow animate-pulse-slow">
-                <Calendar className="text-primary-foreground h-6 w-6" />
+          <div className="flex items-center space-x-3 lg:space-x-6">
+            <div className="flex items-center space-x-2 lg:space-x-3">
+              <div className="w-8 lg:w-10 h-8 lg:h-10 bg-primary rounded-xl flex items-center justify-center shadow-glow animate-pulse-slow">
+                <Calendar className="text-primary-foreground h-5 lg:h-6 w-5 lg:w-6" />
               </div>
-              <h1 className="text-2xl font-display font-bold gradient-text">EventMaster</h1>
+              <h1 className="text-lg lg:text-2xl font-display font-bold gradient-text">EventMaster</h1>
             </div>
-            <div className="hidden md:flex space-x-6">
+            <div className="hidden lg:flex space-x-6">
               <a href="/events" className="text-primary font-semibold">Events</a>
               {user && <a href="/my-tickets" className="text-muted-foreground hover:text-foreground transition-colors">My Tickets</a>}
               <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</a>
@@ -64,8 +64,8 @@ export default function Events() {
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <div className="relative">
+          <div className="flex items-center space-x-2 lg:space-x-4">
+            <div className="relative hidden lg:block">
               <Input 
                 placeholder="Search technology events..."
                 value={searchQuery}
@@ -132,17 +132,17 @@ export default function Events() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16 px-6">
+      <section className="relative overflow-hidden py-8 lg:py-16 px-4 lg:px-6">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/5" />
         <div className="relative max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in">
-            <MapPin className="w-4 h-4 mr-2" />
+          <div className="inline-flex items-center px-3 lg:px-4 py-2 rounded-full bg-primary/10 text-primary text-xs lg:text-sm font-medium mb-4 lg:mb-6 animate-fade-in">
+            <MapPin className="w-3 lg:w-4 h-3 lg:h-4 mr-2" />
             Discover Technology Events Near You
           </div>
-          <h1 className="text-4xl md:text-6xl font-display font-bold gradient-text mb-6 animate-slide-up">
+          <h1 className="text-3xl sm:text-4xl lg:text-6xl font-display font-bold gradient-text mb-4 lg:mb-6 animate-slide-up">
             Find Your Next Tech Adventure
           </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8 animate-slide-up animation-delay-200">
+          <p className="text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto mb-6 lg:mb-8 animate-slide-up animation-delay-200">
             Connect with the tech community through conferences, workshops, meetups, and hackathons. 
             Expand your knowledge, network with professionals, and stay ahead in technology.
           </p>
