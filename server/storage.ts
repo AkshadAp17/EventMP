@@ -49,6 +49,9 @@ export interface IStorage {
     totalRevenue: number;
     conversionRate: number;
   }>;
+  getRevenueAnalytics(): Promise<any>;
+  getAttendeeAnalytics(): Promise<any>;
+  getEventAnalytics(): Promise<any>;
   
   // Notification operations
   createNotification(notification: InsertNotification): Promise<Notification>;
@@ -315,8 +318,85 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Analytics methods
+  async getRevenueAnalytics() {
+    const revenueByMonth = await db
+      .select({
+        month: sql<string>`EXTRACT(MONTH FROM ${bookings.createdAt})`,
+        year: sql<string>`EXTRACT(YEAR FROM ${bookings.createdAt})`,
+        revenue: sql<number>`sum(${bookings.totalAmount})`,
+      })
+      .from(bookings)
+      .where(eq(bookings.status, 'confirmed'))
+      .groupBy(sql`EXTRACT(YEAR FROM ${bookings.createdAt}), EXTRACT(MONTH FROM ${bookings.createdAt})`)
+      .orderBy(sql`EXTRACT(YEAR FROM ${bookings.createdAt}), EXTRACT(MONTH FROM ${bookings.createdAt})`);
+
+    return revenueByMonth;
+  }
+
+  async getAttendeeAnalytics() {
+    const attendeesByEvent = await db
+      .select({
+        eventName: events.name,
+        attendees: sql<number>`sum(${bookings.quantity})`,
+        revenue: sql<number>`sum(${bookings.totalAmount})`,
+      })
+      .from(bookings)
+      .leftJoin(events, eq(bookings.eventId, events.id))
+      .where(eq(bookings.status, 'confirmed'))
+      .groupBy(events.id, events.name)
+      .orderBy(sql`sum(${bookings.quantity}) DESC`);
+
+    return attendeesByEvent;
+  }
+
+  async getEventAnalytics() {
+    const eventsByCategory = await db
+      .select({
+        category: events.category,
+        eventCount: count(),
+        totalAttendees: sql<number>`sum(${events.currentAttendees})`,
+      })
+      .from(events)
+      .groupBy(events.category)
+      .orderBy(count());
+
+    return eventsByCategory;
+  }
+
   // Sample data
   async createSampleEvents(): Promise<void> {
+    // Create sample admin user first
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const demoEmail = process.env.DEMO_USER_EMAIL;
+    
+    let adminUser = null;
+    let demoUser = null;
+    
+    if (adminEmail) {
+      adminUser = await this.getUserByEmail(adminEmail);
+      if (!adminUser) {
+        adminUser = await this.createUser({
+          email: adminEmail,
+          firstName: 'Admin',
+          lastName: 'User',
+          isAdmin: true,
+        });
+      }
+    }
+    
+    if (demoEmail) {
+      demoUser = await this.getUserByEmail(demoEmail);
+      if (!demoUser) {
+        demoUser = await this.createUser({
+          email: demoEmail,
+          firstName: 'Demo',
+          lastName: 'User',
+          isAdmin: false,
+        });
+      }
+    }
+
     const sampleEvents = [
       {
         name: "Tech Conference 2024",
@@ -330,7 +410,7 @@ export class DatabaseStorage implements IStorage {
         currentAttendees: 342,
         status: "active",
         imageUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
-        createdBy: "admin",
+        createdBy: adminUser?.id || "admin-user",
       },
       {
         name: "Summer Music Festival",
@@ -344,7 +424,7 @@ export class DatabaseStorage implements IStorage {
         currentAttendees: 1205,
         status: "upcoming",
         imageUrl: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
-        createdBy: "admin",
+        createdBy: adminUser?.id || "admin-user",
       },
       {
         name: "Digital Marketing Workshop",
@@ -358,12 +438,65 @@ export class DatabaseStorage implements IStorage {
         currentAttendees: 0,
         status: "draft",
         imageUrl: "https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
-        createdBy: "admin",
+        createdBy: adminUser?.id || "admin-user",
+      },
+      {
+        name: "AI & Machine Learning Summit",
+        description: "Deep dive into the latest AI technologies and machine learning frameworks.",
+        category: "conference",
+        startDate: new Date("2024-05-12T09:00:00"),
+        endDate: new Date("2024-05-12T17:00:00"),
+        location: "Silicon Valley Convention Center",
+        ticketPrice: "179.00",
+        maxAttendees: 300,
+        currentAttendees: 245,
+        status: "active",
+        imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
+        createdBy: adminUser?.id || "admin-user",
+      },
+      {
+        name: "Web Development Bootcamp",
+        description: "Intensive hands-on workshop covering modern web development practices.",
+        category: "workshop",
+        startDate: new Date("2024-07-15T10:00:00"),
+        endDate: new Date("2024-07-17T16:00:00"),
+        location: "TechHub Downtown",
+        ticketPrice: "299.00",
+        maxAttendees: 80,
+        currentAttendees: 67,
+        status: "active",
+        imageUrl: "https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
+        createdBy: adminUser?.id || "admin-user",
       },
     ];
 
-    for (const event of sampleEvents) {
-      await db.insert(events).values(event).onConflictDoNothing();
+    // Insert events and create sample bookings
+    for (const eventData of sampleEvents) {
+      const [event] = await db.insert(events).values(eventData).onConflictDoNothing().returning();
+      
+      if (event && demoUser && (event.currentAttendees || 0) > 0) {
+        // Create sample bookings for events with attendees
+        const attendeeCount = event.currentAttendees || 0;
+        const quantity = Math.min(2, attendeeCount);
+        const sampleBookings = [
+          {
+            eventId: event.id,
+            userId: demoUser.id,
+            quantity: quantity,
+            totalAmount: String(parseFloat(event.ticketPrice) * quantity),
+            status: "confirmed" as const,
+            attendeeEmail: demoUser.email,
+            attendeeName: `${demoUser.firstName} ${demoUser.lastName}`,
+          },
+        ];
+
+        for (const booking of sampleBookings) {
+          await db.insert(bookings).values({
+            ...booking,
+            bookingReference: this.generateBookingReference(),
+          }).onConflictDoNothing();
+        }
+      }
     }
   }
 

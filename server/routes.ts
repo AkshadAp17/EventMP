@@ -84,9 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create user with proper ID generation
-      const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const user = await storage.createUser({
-        id: userId,
         email,
         firstName: firstName || username || email.split('@')[0],
         lastName: lastName || '',
@@ -127,8 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = await storage.getUserByEmail(email);
         if (!user) {
           user = await storage.createUser({
-            id: 'admin-user',
-            email: adminEmail,
+            email: adminEmail!,
             firstName: 'Admin',
             lastName: 'User',
             isAdmin: true,
@@ -140,8 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = await storage.getUserByEmail(email);
         if (!user) {
           user = await storage.createUser({
-            id: 'demo-user',
-            email: demoEmail,
+            email: demoEmail!,
             firstName: 'Demo',
             lastName: 'User',
             isAdmin: false,
@@ -185,7 +181,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const adminUser = await storage.getUserByEmail(adminEmail);
         if (!adminUser) {
           await storage.createUser({
-            id: 'admin-user',
             email: adminEmail,
             firstName: 'Admin',
             lastName: 'User',
@@ -201,7 +196,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const demoUser = await storage.getUserByEmail(demoEmail);
         if (!demoUser) {
           await storage.createUser({
-            id: 'demo-user',
             email: demoEmail,
             firstName: 'Demo',
             lastName: 'User',
@@ -662,6 +656,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting notification:", error);
       res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  // Tickets/Attendees routes - Admin only
+  app.get('/api/tickets', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Get all bookings (tickets) with event and user information
+      const tickets = await storage.getBookings();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  app.get('/api/attendees', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Get all confirmed bookings (attendees) with event and user information
+      const attendees = await storage.getBookings();
+      const confirmedAttendees = attendees.filter(booking => booking.status === 'confirmed');
+      
+      res.json(confirmedAttendees);
+    } catch (error) {
+      console.error("Error fetching attendees:", error);
+      res.status(500).json({ message: "Failed to fetch attendees" });
+    }
+  });
+
+  // Analytics routes - Admin only
+  app.get('/api/analytics/revenue', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const revenueData = await storage.getRevenueAnalytics();
+      res.json(revenueData);
+    } catch (error) {
+      console.error("Error fetching revenue analytics:", error);
+      res.status(500).json({ message: "Failed to fetch revenue analytics" });
+    }
+  });
+
+  app.get('/api/analytics/attendees', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const attendeeData = await storage.getAttendeeAnalytics();
+      res.json(attendeeData);
+    } catch (error) {
+      console.error("Error fetching attendee analytics:", error);
+      res.status(500).json({ message: "Failed to fetch attendee analytics" });
+    }
+  });
+
+  app.get('/api/analytics/events', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const eventData = await storage.getEventAnalytics();
+      res.json(eventData);
+    } catch (error) {
+      console.error("Error fetching event analytics:", error);
+      res.status(500).json({ message: "Failed to fetch event analytics" });
     }
   });
 
