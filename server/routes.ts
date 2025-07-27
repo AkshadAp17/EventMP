@@ -83,12 +83,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      // Create user without password for now (simplified for Replit setup)
+      // Create user with proper ID generation
+      const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const user = await storage.createUser({
+        id: userId,
         email,
-        firstName,
-        lastName,
-        username,
+        firstName: firstName || username || email.split('@')[0],
+        lastName: lastName || '',
+        isAdmin: false,
         authProvider: "local",
       });
 
@@ -111,8 +113,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
+      // Check credentials against environment variables
+      const adminEmail = process.env.ADMIN_EMAIL;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      const demoEmail = process.env.DEMO_USER_EMAIL;
+      const demoPassword = process.env.DEMO_USER_PASSWORD;
+
+      let user = null;
+      let isValidLogin = false;
+
+      if (email === adminEmail && password === adminPassword) {
+        // Get or create admin user
+        user = await storage.getUserByEmail(email);
+        if (!user) {
+          user = await storage.createUser({
+            id: 'admin-user',
+            email: adminEmail,
+            firstName: 'Admin',
+            lastName: 'User',
+            isAdmin: true,
+          });
+        }
+        isValidLogin = true;
+      } else if (email === demoEmail && password === demoPassword) {
+        // Get or create demo user
+        user = await storage.getUserByEmail(email);
+        if (!user) {
+          user = await storage.createUser({
+            id: 'demo-user',
+            email: demoEmail,
+            firstName: 'Demo',
+            lastName: 'User',
+            isAdmin: false,
+          });
+        }
+        isValidLogin = true;
+      }
+
+      if (!isValidLogin || !user) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
@@ -121,13 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req.session as any).user = user;
       req.user = user; // Set user on request object for immediate use
 
-      // For simplified demo, we'll check if it's the demo admin account
-      if (email === "admin@eventmaster.com" && password === "admin123") {
-        res.json(user);
-      } else {
-        // For regular users, accept any password for now (simplified for demo)
-        res.json(user);
-      }
+      res.json(user);
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
@@ -143,6 +175,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     res.json({ message: "Logged out successfully" });
   });
+
+  // Create default admin and demo users on startup
+  const createDefaultUsers = async () => {
+    try {
+      // Create admin user
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        const adminUser = await storage.getUserByEmail(adminEmail);
+        if (!adminUser) {
+          await storage.createUser({
+            id: 'admin-user',
+            email: adminEmail,
+            firstName: 'Admin',
+            lastName: 'User',
+            isAdmin: true,
+          });
+          console.log('Admin user created successfully');
+        }
+      }
+
+      // Create demo user
+      const demoEmail = process.env.DEMO_USER_EMAIL;
+      if (demoEmail) {
+        const demoUser = await storage.getUserByEmail(demoEmail);
+        if (!demoUser) {
+          await storage.createUser({
+            id: 'demo-user',
+            email: demoEmail,
+            firstName: 'Demo',
+            lastName: 'User',
+            isAdmin: false,
+          });
+          console.log('Demo user created successfully');
+        }
+      }
+    } catch (error) {
+      console.log('Error creating default users:', error);
+    }
+  };
+
+  // Call function to create default users
+  await createDefaultUsers();
 
   // Create sample events on startup
   try {
