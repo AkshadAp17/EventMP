@@ -694,6 +694,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export routes - Admin only
+  app.get('/api/export/tickets', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const tickets = await storage.getBookings();
+      
+      // Convert to CSV format
+      const csvHeader = 'Booking ID,Event,Attendee Name,Email,Quantity,Amount,Status,Date\n';
+      const csvData = tickets.map(ticket => [
+        ticket.bookingReference,
+        ticket.event?.name || 'Unknown',
+        ticket.attendeeName,
+        ticket.attendeeEmail,
+        ticket.quantity,
+        ticket.totalAmount,
+        ticket.status,
+        new Date(ticket.createdAt).toLocaleDateString()
+      ].join(',')).join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="tickets-export.csv"');
+      res.send(csvHeader + csvData);
+    } catch (error) {
+      console.error("Error exporting tickets:", error);
+      res.status(500).json({ message: "Failed to export tickets" });
+    }
+  });
+
+  app.get('/api/export/attendees', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const attendees = await storage.getBookings();
+      const confirmedAttendees = attendees.filter(booking => booking.status === 'confirmed');
+      
+      // Convert to CSV format
+      const csvHeader = 'Name,Email,Event,Tickets,Date,Amount\n';
+      const csvData = confirmedAttendees.map(attendee => [
+        attendee.attendeeName,
+        attendee.attendeeEmail,
+        attendee.event?.name || 'Unknown',
+        attendee.quantity,
+        new Date(attendee.createdAt).toLocaleDateString(),
+        attendee.totalAmount
+      ].join(',')).join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="attendees-export.csv"');
+      res.send(csvHeader + csvData);
+    } catch (error) {
+      console.error("Error exporting attendees:", error);
+      res.status(500).json({ message: "Failed to export attendees" });
+    }
+  });
+
+  // Bulk notification route - Admin only
+  app.post('/api/notifications/bulk', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { title, message, eventId } = req.body;
+      
+      if (!title || !message) {
+        return res.status(400).json({ message: "Title and message are required" });
+      }
+
+      // Get attendees for the event or all attendees if no eventId specified
+      let attendees;
+      if (eventId) {
+        attendees = await storage.getBookings(undefined, parseInt(eventId));
+      } else {
+        attendees = await storage.getBookings();
+      }
+
+      const confirmedAttendees = attendees.filter(booking => booking.status === 'confirmed');
+      
+      // Create notifications for all attendees
+      const notifications = [];
+      for (const attendee of confirmedAttendees) {
+        const notification = await storage.createNotification({
+          userId: attendee.userId,
+          type: 'admin_announcement',
+          title: title,
+          message: message,
+          metadata: eventId ? { eventId: parseInt(eventId) } : {},
+        });
+        notifications.push(notification);
+
+        // Send email notification
+        try {
+          await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: attendee.attendeeEmail,
+            subject: title,
+            html: `
+              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #8B5CF6; text-align: center;">${title}</h2>
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p style="white-space: pre-wrap; color: #374151;">${message}</p>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                  <p style="color: #6b7280;">Best regards,<br>EventMaster Team</p>
+                </div>
+              </div>
+            `,
+          });
+        } catch (emailError) {
+          console.error("Error sending email to", attendee.attendeeEmail, emailError);
+        }
+      }
+
+      res.json({ 
+        message: `Notifications sent to ${notifications.length} attendees`,
+        count: notifications.length 
+      });
+    } catch (error) {
+      console.error("Error sending bulk notifications:", error);
+      res.status(500).json({ message: "Failed to send notifications" });
+    }
+  });
+
   // Analytics routes - Admin only
   app.get('/api/analytics/revenue', isAuthenticated, async (req: any, res) => {
     try {
@@ -707,6 +838,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching revenue analytics:", error);
       res.status(500).json({ message: "Failed to fetch revenue analytics" });
+    }
+  });
+
+  app.get('/api/reports/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Generate comprehensive report
+      const [dashboardStats, revenueData, attendeeData, eventData] = await Promise.all([
+        storage.getDashboardStats(),
+        storage.getRevenueAnalytics(),
+        storage.getAttendeeAnalytics(),
+        storage.getEventAnalytics(),
+      ]);
+
+      const report = {
+        generatedAt: new Date().toISOString(),
+        summary: dashboardStats,
+        revenue: revenueData,
+        attendees: attendeeData,
+        events: eventData,
+      };
+
+      res.json(report);
+    } catch (error) {
+      console.error("Error generating report:", error);
+      res.status(500).json({ message: "Failed to generate report" });
     }
   });
 

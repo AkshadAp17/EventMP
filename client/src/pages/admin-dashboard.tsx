@@ -1,13 +1,177 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest } from "@/lib/queryClient";
 import AdminSidebar from "@/components/admin-sidebar";
 import CreateEventModal from "@/components/create-event-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, DollarSign, TrendingUp, Plus, Download, Mail, BarChart3, CalendarDays, Filter, ArrowUpDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar, Users, DollarSign, TrendingUp, Plus, Download, Mail, BarChart3, CalendarDays, Filter, ArrowUpDown, Edit, Trash2, Eye } from "lucide-react";
+
+// Export Functions
+const exportAttendees = async () => {
+  try {
+    const response = await fetch('/api/export/attendees', {
+      method: 'GET',
+      credentials: 'include',
+    });
+    
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'attendees-export.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }
+  } catch (error) {
+    console.error('Export failed:', error);
+  }
+};
+
+const exportTickets = async () => {
+  try {
+    const response = await fetch('/api/export/tickets', {
+      method: 'GET',
+      credentials: 'include',
+    });
+    
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tickets-export.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }
+  } catch (error) {
+    console.error('Export failed:', error);
+  }
+};
+
+// Send Notification Modal Component
+function SendNotificationModal() {
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [eventId, setEventId] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: events } = useQuery({
+    queryKey: ["/api/events"],
+    retry: false,
+  });
+
+  const sendNotificationMutation = useMutation({
+    mutationFn: async (data: { title: string; message: string; eventId?: string }) => {
+      return apiRequest('/api/notifications/bulk', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Notifications Sent",
+        description: data.message,
+      });
+      setIsOpen(false);
+      setTitle('');
+      setMessage('');
+      setEventId('');
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send notifications",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !message) return;
+    
+    sendNotificationMutation.mutate({
+      title,
+      message,
+      eventId: eventId || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Mail className="w-4 h-4 mr-2" />
+          Send Notification
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Send Notification</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Title</label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Notification title"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Message</label>
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Your message to attendees"
+              rows={4}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Event (Optional)</label>
+            <select
+              value={eventId}
+              onChange={(e) => setEventId(e.target.value)}
+              className="w-full p-2 border rounded-md"
+            >
+              <option value="">All attendees</option>
+              {events?.map((event: any) => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={sendNotificationMutation.isPending}>
+              {sendNotificationMutation.isPending ? 'Sending...' : 'Send'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // Attendees Table Component
 function AttendeesTable() {
@@ -74,6 +238,69 @@ function AttendeesTable() {
   );
 }
 
+// View Ticket Modal Component
+function ViewTicketModal({ booking }: { booking: any }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Eye className="w-4 h-4 mr-1" />
+          View
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Ticket Details</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-slate-600">Booking Reference</label>
+            <p className="font-mono text-sm">{booking.bookingReference}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Event</label>
+            <p>{booking.event?.name}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Attendee</label>
+            <p>{booking.attendeeName}</p>
+            <p className="text-sm text-slate-500">{booking.attendeeEmail}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-slate-600">Quantity</label>
+              <p>{booking.quantity}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-600">Amount</label>
+              <p>${booking.totalAmount}</p>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Status</label>
+            <p className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+              booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {booking.status}
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Booking Date</label>
+            <p>{new Date(booking.createdAt).toLocaleDateString()}</p>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={() => setIsOpen(false)}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Tickets Table Component
 function TicketsTable() {
   const { data: bookings } = useQuery({
@@ -127,14 +354,7 @@ function TicketsTable() {
                   </span>
                 </td>
                 <td className="p-4">
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline">View</Button>
-                    {booking.status === 'pending' && (
-                      <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50">
-                        Confirm
-                      </Button>
-                    )}
-                  </div>
+                  <ViewTicketModal booking={booking} />
                 </td>
               </tr>
             ))}
@@ -169,6 +389,18 @@ export default function AdminDashboard() {
   const [dateFilterTo, setDateFilterTo] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
+
+  // Handler functions
+  const handleDateFromChange = (value: string) => {
+    setDateFilterFrom(value);
+    if (value && !dateFilterTo) {
+      // Auto-set end date to 7 days after start date
+      const startDate = new Date(value);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 7);
+      setDateFilterTo(endDate.toISOString().split('T')[0]);
+    }
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -237,17 +469,7 @@ export default function AdminDashboard() {
       }
     }) : [];
 
-  // Auto-set date range when filtering
-  const handleDateFromChange = (value: string) => {
-    setDateFilterFrom(value);
-    if (value && !dateFilterTo) {
-      // Auto-set end date to 7 days after start date
-      const startDate = new Date(value);
-      const endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + 7);
-      setDateFilterTo(endDate.toISOString().split('T')[0]);
-    }
-  };
+  // Auto-set date range when filtering - removed duplicate declaration
 
   if (isLoading || !user) {
     return (
@@ -453,17 +675,54 @@ export default function AdminDashboard() {
                     Create New Event
                   </Button>
                   
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={exportAttendees}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Export Attendee Data
                   </Button>
                   
-                  <Button variant="outline" className="w-full justify-start">
-                    <Mail className="w-4 h-4 mr-2" />
-                    Send Notifications
-                  </Button>
+                  <div className="w-full">
+                    <SendNotificationModal />
+                  </div>
                   
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/reports/generate', {
+                          method: 'GET',
+                          credentials: 'include',
+                        });
+                        
+                        if (response.ok) {
+                          const report = await response.json();
+                          const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `eventmaster-report-${new Date().toISOString().split('T')[0]}.json`;
+                          document.body.appendChild(a);
+                          a.click();
+                          window.URL.revokeObjectURL(url);
+                          document.body.removeChild(a);
+                          toast({
+                            title: "Report Generated",
+                            description: "Analytics report has been downloaded successfully",
+                          });
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to generate report",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
                     <BarChart3 className="w-4 h-4 mr-2" />
                     Generate Reports
                   </Button>
@@ -633,8 +892,12 @@ export default function AdminDashboard() {
                               </td>
                               <td className="p-4">
                                 <div className="flex space-x-2">
-                                  <Button size="sm" variant="outline">Edit</Button>
+                                  <Button size="sm" variant="outline">
+                                    <Edit className="w-4 h-4 mr-1" />
+                                    Edit
+                                  </Button>
                                   <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50">
+                                    <Trash2 className="w-4 h-4 mr-1" />
                                     Delete
                                   </Button>
                                 </div>
@@ -670,14 +933,11 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-800">Attendee Management</h2>
               <div className="flex space-x-3">
-                <Button variant="outline">
+                <Button variant="outline" onClick={exportAttendees}>
                   <Download className="w-4 h-4 mr-2" />
                   Export Data
                 </Button>
-                <Button variant="outline">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Send Notification
-                </Button>
+                <SendNotificationModal />
               </div>
             </div>
 
@@ -695,7 +955,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-800">Ticket Management</h2>
               <div className="flex space-x-3">
-                <Button variant="outline">
+                <Button variant="outline" onClick={exportTickets}>
                   <Download className="w-4 h-4 mr-2" />
                   Export Tickets
                 </Button>

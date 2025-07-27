@@ -561,6 +561,14 @@ export class DatabaseStorage implements IStorage {
   private generateBookingReference(): string {
     return Math.random().toString(36).substring(2, 10).toUpperCase();
   }
+
+  async createNotification(notificationData: InsertNotification): Promise<Notification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values(notificationData)
+      .returning();
+    return notification;
+  }
 }
 
 export const storage = new DatabaseStorage();
