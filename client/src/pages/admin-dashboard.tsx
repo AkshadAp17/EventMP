@@ -439,7 +439,7 @@ export default function AdminDashboard() {
   });
 
   // For admin dashboard, fetch all events regardless of status
-  const { data: rawEvents } = useQuery({
+  const { data: rawEvents, isLoading: eventsLoading } = useQuery({
     queryKey: ["/api/events"],
     queryFn: () => fetch("/api/events?status=").then(res => res.json()),
     retry: false,
@@ -669,8 +669,14 @@ export default function AdminDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {events?.slice(0, 3).map((event: any) => (
-                        <div key={event.id} className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg">
+                      {eventsLoading ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
+                          <p className="text-sm text-slate-600">Loading events...</p>
+                        </div>
+                      ) : events && events.length > 0 ? (
+                        events.slice(0, 3).map((event: any) => (
+                          <div key={event.id} className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg">
                           <img 
                             src={event.imageUrl || `https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80`}
                             alt={event.name}
@@ -696,8 +702,14 @@ export default function AdminDashboard() {
                               {event.currentAttendees} attendees
                             </p>
                           </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <Calendar className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                          <p className="text-sm text-slate-600">No events found</p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </CardContent>
                 </Card>
