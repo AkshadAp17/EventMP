@@ -18,12 +18,18 @@ export default function EventDetails() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [ticketQuantity, setTicketQuantity] = useState(1);
+  
+  // Define authentication state
+  const isAuthenticated = !!user;
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["/api/events", id],
     enabled: !!id,
     retry: false,
   });
+  
+  // Type guard for event
+  const eventData = event as any;
 
   const bookingMutation = useMutation({
     mutationFn: async (bookingData: any) => {
@@ -35,6 +41,11 @@ export default function EventDetails() {
         title: "Booking Created",
         description: `Your booking reference is ${booking.bookingReference}`,
       });
+      
+      // Invalidate cache to refresh event data and attendee counts
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       
       // Navigate to checkout
       window.location.href = `/checkout/${booking.id}`;
@@ -71,12 +82,12 @@ export default function EventDetails() {
       return;
     }
 
-    if (!event) return;
+    if (!eventData) return;
 
-    const totalAmount = parseFloat(event.ticketPrice) * ticketQuantity;
+    const totalAmount = parseFloat(eventData.ticketPrice) * ticketQuantity;
     
     bookingMutation.mutate({
-      eventId: event.id,
+      eventId: eventData.id,
       quantity: ticketQuantity,
       totalAmount: totalAmount.toString(),
       status: "pending",
@@ -91,7 +102,7 @@ export default function EventDetails() {
     );
   }
 
-  if (!event) {
+  if (!eventData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Card className="w-full max-w-md mx-4">
@@ -109,9 +120,9 @@ export default function EventDetails() {
     );
   }
 
-  const availableTickets = event.maxAttendees - event.currentAttendees;
+  const availableTickets = eventData.maxAttendees - eventData.currentAttendees;
   const isEventFull = availableTickets <= 0;
-  const isEventPast = new Date(event.endDate) < new Date();
+  const isEventPast = new Date(eventData.endDate) < new Date();
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -165,8 +176,8 @@ export default function EventDetails() {
             {/* Event Image */}
             <div className="aspect-video rounded-2xl overflow-hidden">
               <img 
-                src={event.imageUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"}
-                alt={event.name}
+                src={eventData.imageUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=400"}
+                alt={eventData.name}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -177,28 +188,28 @@ export default function EventDetails() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-3xl font-bold text-slate-800 mb-2">
-                      {event.name}
+                      {eventData.name}
                     </CardTitle>
                     <Badge variant="secondary" className="mb-4">
-                      {event.category}
+                      {eventData.category}
                     </Badge>
                   </div>
                   <Badge 
-                    variant={event.status === 'active' ? 'default' : 'secondary'}
+                    variant={eventData.status === 'active' ? 'default' : 'secondary'}
                     className={
-                      event.status === 'active' ? 'bg-green-100 text-green-800' :
-                      event.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-                      event.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                      eventData.status === 'active' ? 'bg-green-100 text-green-800' :
+                      eventData.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                      eventData.status === 'completed' ? 'bg-gray-100 text-gray-800' :
                       'bg-yellow-100 text-yellow-800'
                     }
                   >
-                    {event.status}
+                    {eventData.status}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <p className="text-lg text-slate-600 leading-relaxed">
-                  {event.description}
+                  {eventData.description}
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -207,8 +218,8 @@ export default function EventDetails() {
                     <div>
                       <p className="font-medium text-slate-800">Start Date</p>
                       <p className="text-slate-600">
-                        {new Date(event.startDate).toLocaleDateString()} at{" "}
-                        {new Date(event.startDate).toLocaleTimeString()}
+                        {new Date(eventData.startDate).toLocaleDateString()} at{" "}
+                        {new Date(eventData.startDate).toLocaleTimeString()}
                       </p>
                     </div>
                   </div>
@@ -218,8 +229,8 @@ export default function EventDetails() {
                     <div>
                       <p className="font-medium text-slate-800">End Date</p>
                       <p className="text-slate-600">
-                        {new Date(event.endDate).toLocaleDateString()} at{" "}
-                        {new Date(event.endDate).toLocaleTimeString()}
+                        {new Date(eventData.endDate).toLocaleDateString()} at{" "}
+                        {new Date(eventData.endDate).toLocaleTimeString()}
                       </p>
                     </div>
                   </div>
@@ -228,7 +239,7 @@ export default function EventDetails() {
                     <MapPin className="h-5 w-5 text-slate-400" />
                     <div>
                       <p className="font-medium text-slate-800">Location</p>
-                      <p className="text-slate-600">{event.location}</p>
+                      <p className="text-slate-600">{eventData.location}</p>
                     </div>
                   </div>
 
@@ -237,7 +248,7 @@ export default function EventDetails() {
                     <div>
                       <p className="font-medium text-slate-800">Capacity</p>
                       <p className="text-slate-600">
-                        {event.currentAttendees} / {event.maxAttendees} attendees
+                        {eventData.currentAttendees} / {eventData.maxAttendees} attendees
                       </p>
                     </div>
                   </div>
@@ -258,12 +269,12 @@ export default function EventDetails() {
               <CardContent className="space-y-6">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-slate-800">
-                    ${parseFloat(event.ticketPrice).toFixed(2)}
+                    ${parseFloat(eventData.ticketPrice).toFixed(2)}
                   </p>
                   <p className="text-slate-600">per ticket</p>
                 </div>
 
-                {!isEventPast && !isEventFull && event.status !== 'draft' ? (
+                {!isEventPast && !isEventFull && eventData.status !== 'draft' ? (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="quantity">Number of Tickets</Label>
@@ -283,7 +294,7 @@ export default function EventDetails() {
                     <div className="border-t pt-4">
                       <div className="flex justify-between text-lg font-semibold">
                         <span>Total:</span>
-                        <span>${(parseFloat(event.ticketPrice) * ticketQuantity).toFixed(2)}</span>
+                        <span>${(parseFloat(eventData.ticketPrice) * ticketQuantity).toFixed(2)}</span>
                       </div>
                     </div>
 
@@ -315,7 +326,7 @@ export default function EventDetails() {
                       <p className="text-slate-600">This event has ended</p>
                     ) : isEventFull ? (
                       <p className="text-slate-600">This event is sold out</p>
-                    ) : event.status === 'draft' ? (
+                    ) : eventData.status === 'draft' ? (
                       <p className="text-slate-600">This event is not yet available for booking</p>
                     ) : (
                       <p className="text-slate-600">Booking is not available</p>
@@ -334,7 +345,7 @@ export default function EventDetails() {
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <span className="text-slate-600">Tickets Sold</span>
-                    <span className="font-medium">{event.currentAttendees}</span>
+                    <span className="font-medium">{eventData.currentAttendees}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Available</span>
@@ -342,12 +353,12 @@ export default function EventDetails() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Total Capacity</span>
-                    <span className="font-medium">{event.maxAttendees}</span>
+                    <span className="font-medium">{eventData.maxAttendees}</span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-2">
                     <div 
                       className="bg-primary-500 h-2 rounded-full" 
-                      style={{ width: `${(event.currentAttendees / event.maxAttendees) * 100}%` }}
+                      style={{ width: `${(eventData.currentAttendees / eventData.maxAttendees) * 100}%` }}
                     />
                   </div>
                 </div>
