@@ -125,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = await storage.getUserByEmail(email);
         if (!user) {
           user = await storage.createUser({
-            email: adminEmail!,
+            email: adminEmail,
             firstName: 'Admin',
             lastName: 'User',
             isAdmin: true,
@@ -137,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = await storage.getUserByEmail(email);
         if (!user) {
           user = await storage.createUser({
-            email: demoEmail!,
+            email: demoEmail,
             firstName: 'Demo',
             lastName: 'User',
             isAdmin: false,
