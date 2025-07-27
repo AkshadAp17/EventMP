@@ -24,6 +24,7 @@ export interface IStorage {
   // User operations (supports Auth0 and local auth)
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   upsertUser(user: Partial<UpsertUser> & { id: string }): Promise<User>;
   createUser(user: Partial<UpsertUser> & { email: string }): Promise<User>;
   
@@ -81,14 +82,36 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
   async upsertUser(userData: Partial<UpsertUser> & { id: string }): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values({
+        id: userData.id,
+        email: userData.email || '',
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        username: userData.username || null,
+        password: userData.password || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        isAdmin: userData.isAdmin || false,
+        authProvider: userData.authProvider || 'local',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          ...userData,
+          email: userData.email || users.email,
+          firstName: userData.firstName || users.firstName,
+          lastName: userData.lastName || users.lastName,
+          username: userData.username || users.username,
+          profileImageUrl: userData.profileImageUrl || users.profileImageUrl,
+          isAdmin: userData.isAdmin || users.isAdmin,
+          authProvider: userData.authProvider || users.authProvider,
           updatedAt: new Date(),
         },
       })
@@ -560,14 +583,6 @@ export class DatabaseStorage implements IStorage {
 
   private generateBookingReference(): string {
     return Math.random().toString(36).substring(2, 10).toUpperCase();
-  }
-
-  async createNotification(notificationData: InsertNotification): Promise<Notification> {
-    const [notification] = await db
-      .insert(notifications)
-      .values(notificationData)
-      .returning();
-    return notification;
   }
 }
 

@@ -573,9 +573,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const booking = await storage.createBooking(bookingData);
       
-      // Send confirmation email after booking creation
-      if (booking && booking.event) {
-        await sendBookingConfirmationEmail(booking, booking.event);
+      // Get event details for email
+      const event = await storage.getEvent(booking.eventId);
+      if (booking && event) {
+        await sendBookingConfirmationEmail(booking, event);
       }
       
       res.status(201).json(booking);
@@ -833,6 +834,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting notification:", error);
       res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  // Users route - Admin only
+  app.get('/api/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const users = await storage.getUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 

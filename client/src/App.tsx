@@ -15,6 +15,7 @@ import AuthPage from "@/pages/auth-page";
 import AuthChoice from "@/pages/auth-choice";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
+import Users from "@/pages/users";
 import type { User } from "@shared/schema";
 
 function Router() {
@@ -41,6 +42,7 @@ function Router() {
       
       {/* Protected routes */}
       <ProtectedRoute path="/admin" component={AdminDashboard} />
+      <ProtectedRoute path="/admin/users" component={Users} />
       <ProtectedRoute path="/checkout/:bookingId" component={Checkout} />
       
       <Route component={NotFound} />
