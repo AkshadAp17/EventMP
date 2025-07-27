@@ -30,8 +30,10 @@ transporter.verify((error, success) => {
 const isAuthenticated = (req: any, res: any, next: any) => {
   // Check session-based authentication
   const userId = (req.session as any)?.userId;
-  if (userId) {
-    req.user = (req.session as any).user;
+  const sessionUser = (req.session as any)?.user;
+  
+  if (userId && sessionUser) {
+    req.user = sessionUser;
     return next();
   }
   
@@ -343,8 +345,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const eventData = insertEventSchema.parse(processedData);
-      
       const event = await storage.createEvent(eventData);
+      
       res.status(201).json(event);
     } catch (error) {
       if (error instanceof z.ZodError) {
