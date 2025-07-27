@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Users, DollarSign, TrendingUp, Plus, Download, Mail, BarChart3, CalendarDays, Filter, ArrowUpDown, Edit, Trash2, Eye } from "lucide-react";
+import { Calendar, Users, DollarSign, TrendingUp, Plus, Download, Mail, BarChart3, CalendarDays, Filter, ArrowUpDown, Edit, Trash2, Eye, LogOut, User, Settings } from "lucide-react";
 
 // Export Functions
 const exportAttendees = async () => {
@@ -556,21 +557,62 @@ export default function AdminDashboard() {
                  activeTab === "attendees" ? "Attendee Management" :
                  activeTab === "tickets" ? "Ticket Management" :
                  activeTab === "analytics" ? "Analytics & Reports" :
+                 activeTab === "user-view" ? "User View" :
                  "Event Discovery"}
               </h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <img 
-                  src={user.profileImageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user.firstName} ${user.lastName}`} 
-                  alt="User Avatar" 
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <span className="text-sm font-medium text-slate-700">
-                  {user.firstName} {user.lastName}
-                </span>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center space-x-3 hover:bg-slate-100">
+                    <img 
+                      src={user.profileImageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user.firstName} ${user.lastName}`} 
+                      alt="User Avatar" 
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      {user.firstName} {user.lastName}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => window.location.href = "/profile"}
+                    className="cursor-pointer"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setActiveTab("user-view")}
+                    className="cursor-pointer"
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span>User View</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      // Clear session and redirect to logout
+                      fetch('/api/logout', { method: 'POST', credentials: 'include' })
+                        .then(() => {
+                          window.location.href = "/auth";
+                        })
+                        .catch(() => {
+                          // Fallback logout
+                          window.location.href = "/auth";
+                        });
+                    }}
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
