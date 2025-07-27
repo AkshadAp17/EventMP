@@ -6,6 +6,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import AdminSidebar from "@/components/admin-sidebar";
 import CreateEventModal from "@/components/create-event-modal";
+import EditEventModal from "@/components/edit-event-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -381,8 +382,10 @@ type DashboardStats = {
 export default function AdminDashboard() {
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
   
   // Event filtering and sorting states
   const [dateFilterFrom, setDateFilterFrom] = useState("");
@@ -469,7 +472,46 @@ export default function AdminDashboard() {
       }
     }) : [];
 
-  // Auto-set date range when filtering - removed duplicate declaration
+  // Delete event mutation
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await apiRequest("DELETE", `/api/events/${eventId}`);
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Event Deleted",
+        description: "The event has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete event",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteEvent = (event: any) => {
+    if (window.confirm(`Are you sure you want to delete "${event.name}"? This action cannot be undone.`)) {
+      deleteEventMutation.mutate(event.id);
+    }
+  };
 
   if (isLoading || !user) {
     return (
@@ -892,11 +934,22 @@ export default function AdminDashboard() {
                               </td>
                               <td className="p-4">
                                 <div className="flex space-x-2">
-                                  <Button size="sm" variant="outline">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => setEditingEvent(event)}
+                                    disabled={deleteEventMutation.isPending}
+                                  >
                                     <Edit className="w-4 h-4 mr-1" />
                                     Edit
                                   </Button>
-                                  <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-red-600 hover:bg-red-50"
+                                    onClick={() => handleDeleteEvent(event)}
+                                    disabled={deleteEventMutation.isPending}
+                                  >
                                     <Trash2 className="w-4 h-4 mr-1" />
                                     Delete
                                   </Button>
@@ -1050,6 +1103,14 @@ export default function AdminDashboard() {
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
       />
+      
+      {editingEvent && (
+        <EditEventModal 
+          isOpen={!!editingEvent} 
+          onClose={() => setEditingEvent(null)} 
+          event={editingEvent}
+        />
+      )}
     </div>
   );
 }

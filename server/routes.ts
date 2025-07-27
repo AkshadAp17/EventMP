@@ -137,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (email === demoEmail && password === demoPassword) {
         // Get or create demo user
         user = await storage.getUserByEmail(email);
-        if (!user) {
+        if (!user && demoEmail) {
           user = await storage.createUser({
             email: demoEmail,
             firstName: 'Demo',
@@ -714,7 +714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ticket.quantity,
         ticket.totalAmount,
         ticket.status,
-        new Date(ticket.createdAt).toLocaleDateString()
+        ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : ''
       ].join(',')).join('\n');
 
       res.setHeader('Content-Type', 'text/csv');
@@ -743,7 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attendee.attendeeEmail,
         attendee.event?.name || 'Unknown',
         attendee.quantity,
-        new Date(attendee.createdAt).toLocaleDateString(),
+        attendee.createdAt ? new Date(attendee.createdAt).toLocaleDateString() : '',
         attendee.totalAmount
       ].join(',')).join('\n');
 
