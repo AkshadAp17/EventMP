@@ -261,13 +261,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/auth/logout', (req, res) => {
-    // Clear session
+    console.log('🚪 Auth logout request received, clearing session...');
     req.session.destroy((err: any) => {
       if (err) {
         console.error('Session destruction error:', err);
         return res.status(500).json({ message: "Logout failed" });
       }
       res.clearCookie('connect.sid');
+      console.log('✅ Auth session cleared successfully');
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
+  // Additional logout route for compatibility
+  app.post('/api/logout', (req, res) => {
+    console.log('🚪 General logout request received, clearing session...');
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error('Session destruction error:', err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.clearCookie('connect.sid');
+      console.log('✅ General session cleared successfully');
       res.json({ message: "Logged out successfully" });
     });
   });
