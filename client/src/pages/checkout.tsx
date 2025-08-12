@@ -31,7 +31,7 @@ function CheckoutForm({ booking }: { booking: any }) {
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/events/${booking.event.id}?booking=${booking.bookingReference}`,
+        return_url: `${window.location.origin}/events/${booking.event?.id || ""}?booking=${booking.bookingReference || ""}`,
       },
     });
 
@@ -71,7 +71,7 @@ function CheckoutForm({ booking }: { booking: any }) {
         ) : (
           <>
             <CreditCard className="w-4 h-4 mr-2" />
-            Pay ${parseFloat(booking.totalAmount).toFixed(2)}
+            Pay ${parseFloat(booking.totalAmount || "0").toFixed(2)}
           </>
         )}
       </Button>
@@ -90,13 +90,16 @@ export default function Checkout() {
     retry: false,
   });
 
+  // If booking data is not available, return empty object to prevent errors
+  const safeBooking = booking || {};
+
   useEffect(() => {
     if (!booking) return;
 
     // Create PaymentIntent
     apiRequest("POST", "/api/create-payment-intent", { 
-      amount: parseFloat(booking.totalAmount),
-      bookingId: booking.id
+      amount: parseFloat(safeBooking.totalAmount || "0"),
+      bookingId: safeBooking.id || bookingId
     })
       .then((res) => res.json())
       .then((data) => {
@@ -181,13 +184,13 @@ export default function Checkout() {
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-4">
                   <img 
-                    src={booking.event.imageUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=100"}
-                    alt={booking.event.name}
+                    src={safeBooking.event?.imageUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=100"}
+                    alt={safeBooking.event?.name || "Event"}
                     className="w-20 h-16 rounded-lg object-cover"
                   />
                   <div className="flex-1">
-                    <h3 className="font-semibold text-slate-800">{booking.event.name}</h3>
-                    <p className="text-sm text-slate-600">{booking.event.category}</p>
+                    <h3 className="font-semibold text-slate-800">{safeBooking.event?.name || "Loading..."}</h3>
+                    <p className="text-sm text-slate-600">{safeBooking.event?.category || ""}</p>
                   </div>
                 </div>
 
@@ -197,19 +200,19 @@ export default function Checkout() {
                   <div className="flex items-center space-x-3 text-sm">
                     <Calendar className="h-4 w-4 text-slate-400" />
                     <span className="text-slate-600">
-                      {new Date(booking.event.startDate).toLocaleDateString()} at{" "}
-                      {new Date(booking.event.startDate).toLocaleTimeString()}
+                      {safeBooking.event?.startDate ? new Date(safeBooking.event.startDate).toLocaleDateString() : "Date TBD"} at{" "}
+                      {safeBooking.event?.startDate ? new Date(safeBooking.event.startDate).toLocaleTimeString() : "Time TBD"}
                     </span>
                   </div>
 
                   <div className="flex items-center space-x-3 text-sm">
                     <MapPin className="h-4 w-4 text-slate-400" />
-                    <span className="text-slate-600">{booking.event.location}</span>
+                    <span className="text-slate-600">{safeBooking.event?.location || "Location TBD"}</span>
                   </div>
 
                   <div className="flex items-center space-x-3 text-sm">
                     <Users className="h-4 w-4 text-slate-400" />
-                    <span className="text-slate-600">{booking.quantity} ticket(s)</span>
+                    <span className="text-slate-600">{safeBooking.quantity || 0} ticket(s)</span>
                   </div>
                 </div>
 
@@ -218,15 +221,15 @@ export default function Checkout() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Booking Reference</span>
-                    <span className="font-medium">{booking.bookingReference}</span>
+                    <span className="font-medium">{safeBooking.bookingReference || "Loading..."}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Attendee Name</span>
-                    <span className="font-medium">{booking.attendeeName}</span>
+                    <span className="font-medium">{safeBooking.attendeeName || "Loading..."}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Email</span>
-                    <span className="font-medium">{booking.attendeeEmail}</span>
+                    <span className="font-medium">{safeBooking.attendeeEmail || "Loading..."}</span>
                   </div>
                 </div>
 
@@ -235,15 +238,15 @@ export default function Checkout() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Ticket Price</span>
-                    <span>${parseFloat(booking.event.ticketPrice).toFixed(2)}</span>
+                    <span>${parseFloat(safeBooking.event?.ticketPrice || "0").toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Quantity</span>
-                    <span>{booking.quantity}</span>
+                    <span>{safeBooking.quantity || 0}</span>
                   </div>
                   <div className="flex justify-between text-lg font-semibold border-t pt-2">
                     <span>Total</span>
-                    <span>${parseFloat(booking.totalAmount).toFixed(2)}</span>
+                    <span>${parseFloat(safeBooking.totalAmount || "0").toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -269,10 +272,10 @@ export default function Checkout() {
                   </p>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                     <p className="text-green-800 text-sm">
-                      <strong>Confirmation sent to:</strong> {booking.attendeeEmail}
+                      <strong>Confirmation sent to:</strong> {safeBooking.attendeeEmail || "Loading..."}
                     </p>
                     <p className="text-green-800 text-sm mt-1">
-                      <strong>Booking Reference:</strong> {booking.bookingReference}
+                      <strong>Booking Reference:</strong> {safeBooking.bookingReference || "Loading..."}
                     </p>
                   </div>
                   <div className="flex gap-3 justify-center">

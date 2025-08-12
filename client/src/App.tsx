@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth-simple";
 import { ProtectedRoute } from "./lib/protected-route";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
@@ -11,8 +11,7 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import Events from "@/pages/events";
 import EventDetails from "@/pages/event-details";
 import Checkout from "@/pages/checkout";
-import AuthPage from "@/pages/auth-page";
-import AuthChoice from "@/pages/auth-choice";
+import Login from "@/pages/login";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
 import Users from "@/pages/users";
@@ -39,8 +38,7 @@ function Router() {
       <Route path="/events/:id" component={EventDetails} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/auth-choice" component={AuthChoice} />
+      <Route path="/login" component={Login} />
       
       {/* Protected routes */}
       <ProtectedRoute path="/admin" component={AdminDashboard} />
@@ -57,12 +55,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Router />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

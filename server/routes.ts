@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import passport from "passport";
 import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
+import { authenticateUser, createUser, requireAuth, requireAdmin, type AuthUser } from "./auth-simple";
 // Using in-memory storage with Zod validation
 import { z } from "zod";
 import { insertEventSchema, insertBookingSchema } from "@shared/schema";
@@ -123,24 +124,7 @@ const sendBookingCancellationEmail = async (booking: any, event: any) => {
   }
 };
 
-// Simple auth middleware
-const isAuthenticated = (req: any, res: any, next: any) => {
-  // Check session-based authentication
-  const userId = (req.session as any)?.userId;
-  const sessionUser = (req.session as any)?.user;
-  
-  if (userId && sessionUser) {
-    req.user = sessionUser;
-    return next();
-  }
-  
-  // Check passport-based authentication
-  if (req.isAuthenticated && req.isAuthenticated()) {
-    return next();
-  }
-  
-  return res.status(401).json({ message: "Unauthorized" });
-};
+// Use the simple auth middleware from auth-simple.ts
 
 export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Using in-memory storage for clean Replit environment');
@@ -171,34 +155,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
-  // Local registration and login routes (for fallback when not using Replit auth)
-  app.post('/api/register', async (req, res) => {
+  // Simple authentication routes
+  app.post('/api/auth/register', async (req, res) => {
     try {
-      const { email, password, firstName, lastName, username } = req.body;
+      const { email, password, name } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      if (!email || !password || !name) {
+        return res.status(400).json({ message: "Email, password, and name are required" });
       }
 
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "User already exists" });
+      // Check if user already exists (simplified check)
+      const existingDemoUser = email === 'admin@eventmaster.com' || email === 'user@eventmaster.com';
+      if (existingDemoUser) {
+        return res.status(409).json({ message: "User already exists. Please use login." });
       }
 
-      // Create user with proper ID generation and store password
-      const user = await storage.createUser({
-        email,
-        firstName: firstName || username || email.split('@')[0],
-        lastName: lastName || '',
-        isAdmin: false,
-        authProvider: "local",
-        password: password, // Store password for later authentication
-      });
-
-      // Set up session after registration
-      (req.session as any).userId = user.id;
+      const user = await createUser(email, password, name);
+      
+      // Set up session
       (req.session as any).user = user;
-
+      
       res.status(201).json(user);
     } catch (error) {
       console.error("Registration error:", error);
@@ -206,19 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logout route
-  app.post('/api/logout', (req: any, res) => {
-    req.session.destroy((err: any) => {
-      if (err) {
-        console.error('Error destroying session:', err);
-        return res.status(500).json({ message: 'Logout failed' });
-      }
-      res.clearCookie('connect.sid');
-      res.json({ message: 'Logged out successfully' });
-    });
-  });
-
-  app.post('/api/login', async (req, res) => {
+  app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
       
@@ -226,56 +190,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      // Check credentials against hardcoded admin and environment variables
-      const adminEmail = 'akshadapastambh37@gmail.com';
-      const adminPassword = 'Akshad@11';
-      const demoEmail = process.env.DEMO_USER_EMAIL;
-      const demoPassword = process.env.DEMO_USER_PASSWORD;
-
-      let user = null;
-      let isValidLogin = false;
-
-      if (email === adminEmail && password === adminPassword) {
-        // Get or create admin user
-        user = await storage.getUserByEmail(email);
-        if (!user) {
-          user = await storage.createUser({
-            email: adminEmail,
-            firstName: 'Admin',
-            lastName: 'User',
-            isAdmin: true,
-          });
-        }
-        isValidLogin = true;
-      } else if (email === demoEmail && password === demoPassword) {
-        // Get or create demo user
-        user = await storage.getUserByEmail(email);
-        if (!user && demoEmail) {
-          user = await storage.createUser({
-            email: demoEmail,
-            firstName: 'Demo',
-            lastName: 'User',
-            isAdmin: false,
-          });
-        }
-        isValidLogin = true;
-      } else {
-        // Check for registered users
-        user = await storage.getUserByEmail(email);
-        if (user && user.password === password) {
-          isValidLogin = true;
-        }
-      }
-
-      if (!isValidLogin || !user) {
+      const user = await authenticateUser(email, password);
+      
+      if (!user) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      // Set up session after successful login
-      (req.session as any).userId = user.id;
+      // Set up session
       (req.session as any).user = user;
-      req.user = user; // Set user on request object for immediate use
-
+      
       res.json(user);
     } catch (error) {
       console.error("Login error:", error);
@@ -283,14 +206,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/logout', (req, res) => {
+  app.post('/api/auth/logout', (req, res) => {
     // Clear session
     req.session.destroy((err: any) => {
       if (err) {
         console.error('Session destruction error:', err);
+        return res.status(500).json({ message: "Logout failed" });
       }
+      res.clearCookie('connect.sid');
+      res.json({ message: "Logged out successfully" });
     });
-    res.json({ message: "Logged out successfully" });
+  });
+
+  // Get current user route
+  app.get('/api/user', requireAuth, (req: any, res) => {
+    res.json(req.user);
   });
 
   // Create default admin and demo users on startup
@@ -354,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // If Auth0 is configured and user is authenticated via Auth0
-      if (isAuth0Configured && req.oidc?.isAuthenticated()) {
+      if (isAuth0Configured && req.oidc?.requireAuth()) {
         const auth0User = req.oidc.user;
         user = await storage.getUserByEmail(auth0User.email);
         
@@ -371,7 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check passport-based authentication
-      if (req.isAuthenticated && req.isAuthenticated()) {
+      if (req.requireAuth && req.requireAuth()) {
         user = await storage.getUser(req.user.id);
         return res.json(user);
       }
@@ -385,7 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats
-  app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/stats', requireAuth, async (req: any, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -396,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Manual attendee count update route for debugging
-  app.post('/api/events/:id/update-attendee-count', isAuthenticated, async (req: any, res) => {
+  app.post('/api/events/:id/update-attendee-count', requireAuth, async (req: any, res) => {
     try {
       const eventId = parseInt(req.params.id);
       console.log('Manual attendee count update for event:', eventId);
@@ -467,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/events', isAuthenticated, async (req: any, res) => {
+  app.post('/api/events', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -498,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/events/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/events/:id', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -519,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/events/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/events/:id', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -536,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Booking routes
-  app.get('/api/bookings', isAuthenticated, async (req: any, res) => {
+  app.get('/api/bookings', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -558,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single booking by ID
-  app.get('/api/bookings/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/bookings/:id', requireAuth, async (req: any, res) => {
     try {
       const bookingId = req.params.id;
       console.log('Looking for booking with ID:', bookingId);
@@ -586,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/bookings', isAuthenticated, async (req: any, res) => {
+  app.post('/api/bookings', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -641,7 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Skip Stripe payment and create booking with email confirmation
-  app.post("/api/payment/create-intent", isAuthenticated, async (req: any, res) => {
+  app.post("/api/payment/create-intent", requireAuth, async (req: any, res) => {
     try {
       // Since we're not using Stripe, we just return success
       res.json({ 
@@ -656,7 +586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Manual payment confirmation by admin
-  app.post("/api/payment/confirm", isAuthenticated, async (req: any, res) => {
+  app.post("/api/payment/confirm", requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -764,7 +694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Notification routes
-  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+  app.get('/api/notifications', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const notifications = await storage.getNotifications(userId);
@@ -776,7 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cancel booking route
-  app.delete('/api/bookings/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/bookings/:id', requireAuth, async (req: any, res) => {
     try {
       const bookingId = parseInt(req.params.id);
       const userId = req.user.id;
@@ -808,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/notifications/:id/read', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/notifications/:id/read', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const notificationId = parseInt(req.params.id);
@@ -821,7 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/notifications/mark-all-read', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/notifications/mark-all-read', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.id;
       await storage.markAllNotificationsAsRead(userId);
@@ -832,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/notifications/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/notifications/:id', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const notificationId = parseInt(req.params.id);
@@ -846,7 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Users route - Admin only
-  app.get('/api/users', isAuthenticated, async (req: any, res) => {
+  app.get('/api/users', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -862,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tickets/Attendees routes - Admin only
-  app.get('/api/tickets', isAuthenticated, async (req: any, res) => {
+  app.get('/api/tickets', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -878,7 +808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/attendees', isAuthenticated, async (req: any, res) => {
+  app.get('/api/attendees', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -897,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export routes - Admin only
-  app.get('/api/export/tickets', isAuthenticated, async (req: any, res) => {
+  app.get('/api/export/tickets', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -928,7 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/export/attendees', isAuthenticated, async (req: any, res) => {
+  app.get('/api/export/attendees', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -959,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk notification route - Admin only
-  app.post('/api/notifications/bulk', isAuthenticated, async (req: any, res) => {
+  app.post('/api/notifications/bulk', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -1028,7 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analytics routes - Admin only
-  app.get('/api/analytics/revenue', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/revenue', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -1043,7 +973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/reports/generate', isAuthenticated, async (req: any, res) => {
+  app.get('/api/reports/generate', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -1073,7 +1003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analytics/attendees', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/attendees', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
@@ -1088,7 +1018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analytics/events', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/events', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user?.isAdmin) {
