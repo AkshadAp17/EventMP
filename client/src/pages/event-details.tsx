@@ -38,8 +38,8 @@ export default function EventDetails() {
     },
     onSuccess: (booking) => {
       toast({
-        title: "Booking Created",
-        description: `Your booking reference is ${booking.bookingReference}`,
+        title: "Booking Confirmed!",
+        description: `Your booking reference is ${booking.bookingReference}. Email confirmation sent!`,
       });
       
       // Invalidate cache to refresh event data and attendee counts
@@ -47,8 +47,10 @@ export default function EventDetails() {
       queryClient.invalidateQueries({ queryKey: ["/api/events", id] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       
-      // Navigate to checkout
-      window.location.href = `/checkout/${booking.id}`;
+      // Navigate to checkout using MongoDB ObjectId
+      const bookingId = booking._id || booking.id;
+      console.log('Redirecting to checkout with booking ID:', bookingId);
+      window.location.href = `/checkout/${bookingId}`;
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {

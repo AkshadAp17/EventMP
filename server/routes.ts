@@ -539,13 +539,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get single booking by ID
   app.get('/api/bookings/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const bookingId = parseInt(req.params.id);
-      if (isNaN(bookingId)) {
-        return res.status(400).json({ message: "Invalid booking ID" });
-      }
+      const bookingId = req.params.id;
+      console.log('Looking for booking with ID:', bookingId);
 
       const booking = await storage.getBooking(bookingId);
       if (!booking) {
+        console.log('Booking not found:', bookingId);
         return res.status(404).json({ message: "Booking not found" });
       }
 
@@ -558,6 +557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
+      console.log('Booking found and authorized:', booking.bookingReference);
       res.json(booking);
     } catch (error) {
       console.error("Error fetching booking:", error);
@@ -605,7 +605,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await sendBookingConfirmationEmail(booking, event);
       }
       
-      res.status(201).json(booking);
+      // Return booking with proper ID for frontend
+      const bookingWithEvent = await storage.getBooking(booking.id);
+      res.status(201).json(bookingWithEvent || booking);
     } catch (error) {
       console.error("Error creating booking:", error);
       res.status(500).json({ message: "Failed to create booking" });

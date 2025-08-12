@@ -316,8 +316,9 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  async getBooking(id: number): Promise<BookingWithEvent | undefined> {
+  async getBooking(id: string | number): Promise<BookingWithEvent | undefined> {
     try {
+      // Handle both ObjectId strings and numeric IDs
       const booking = await BookingModel.findById(id.toString()).exec();
       if (!booking) return undefined;
       
