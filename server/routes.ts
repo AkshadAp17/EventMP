@@ -216,8 +216,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingUser = await storage.getUserByEmail(email);
         console.log('Database user found:', !!existingUser);
         
-        if (existingUser && (existingUser.passwordHash || existingUser.password)) {
-          const passwordToCheck = existingUser.passwordHash || existingUser.password || '';
+        if (existingUser && (existingUser.password)) {
+          const passwordToCheck = existingUser.password || '';
           console.log('User found with password field:', !!passwordToCheck);
           console.log('Password in DB looks like hash:', passwordToCheck.startsWith('$2'));
           
@@ -238,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const user = {
               id: existingUser.id,
               email: existingUser.email,
-              name: existingUser.name,
+              name: (existingUser as any).name || existingUser.email,
               isAdmin: existingUser.isAdmin || false
             };
             
@@ -751,7 +751,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contact form route
   app.post('/api/contact', async (req, res) => {
     try {
-      const contactData = insertContactMessageSchema.parse(req.body);
+      const { name, email, subject, message } = req.body;
+      const contactData = { name, email, subject, message, status: 'new' };
       const contactMessage = await storage.createContactMessage(contactData);
       
       // Send notification email to admin
@@ -1021,7 +1022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'admin_announcement',
           title: title,
           message: message,
-          // metadata: eventId ? { eventId: parseInt(eventId) } : {},
+          isRead: false
         });
         notifications.push(notification);
 

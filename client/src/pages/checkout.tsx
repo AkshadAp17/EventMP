@@ -1,88 +1,15 @@
-import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CreditCard, Calendar, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users } from "lucide-react";
 
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY ? 
-  loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY) : null;
-
-function CheckoutForm({ booking }: { booking: any }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setIsProcessing(true);
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/events/${booking.event?.id || ""}?booking=${booking.bookingReference || ""}`,
-      },
-    });
-
-    if (error) {
-      toast({
-        title: "Payment Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Payment Successful",
-        description: "Your tickets have been booked successfully!",
-      });
-    }
-
-    setIsProcessing(false);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="p-4 border border-slate-200 rounded-lg">
-        <PaymentElement />
-      </div>
-      
-      <Button 
-        type="submit" 
-        disabled={!stripe || isProcessing}
-        className="w-full bg-primary-500 hover:bg-primary-600"
-        size="lg"
-      >
-        {isProcessing ? (
-          <>
-            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-            Processing Payment...
-          </>
-        ) : (
-          <>
-            <CreditCard className="w-4 h-4 mr-2" />
-            Pay ${parseFloat(booking.totalAmount || "0").toFixed(2)}
-          </>
-        )}
-      </Button>
-    </form>
-  );
-}
+// Payment processing removed - bookings are automatically confirmed
 
 export default function Checkout() {
   const { bookingId } = useParams();
-  const { toast } = useToast();
-  const [clientSecret, setClientSecret] = useState("");
 
   const { data: booking, isLoading } = useQuery({
     queryKey: ["/api/bookings", bookingId],
@@ -91,37 +18,7 @@ export default function Checkout() {
   });
 
   // If booking data is not available, return empty object to prevent errors
-  const safeBooking = booking || {};
-
-  useEffect(() => {
-    if (!booking) return;
-
-    // Create PaymentIntent
-    apiRequest("POST", "/api/create-payment-intent", { 
-      amount: parseFloat(safeBooking.totalAmount || "0"),
-      bookingId: safeBooking.id || bookingId
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-        } else {
-          toast({
-            title: "Payment Setup Failed",
-            description: "Unable to initialize payment. Please try again.",
-            variant: "destructive",
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Payment setup error:", error);
-        toast({
-          title: "Payment Setup Failed",
-          description: "Payment processing is not available at the moment.",
-          variant: "destructive",
-        });
-      });
-  }, [booking, toast]);
+  const safeBooking: any = booking || {};
 
   if (isLoading) {
     return (
