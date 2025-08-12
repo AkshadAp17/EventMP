@@ -1,9 +1,4 @@
 import {
-  users,
-  events,
-  bookings,
-  notifications,
-  contactMessages,
   type User,
   type UpsertUser,
   type Event,
@@ -17,8 +12,6 @@ import {
   type ContactMessage,
   type InsertContactMessage,
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, desc, count, sql, and, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (supports Auth0 and local auth)
@@ -70,520 +63,458 @@ export interface IStorage {
   createSampleEvents(): Promise<void>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class MemStorage implements IStorage {
+  private users = new Map<string, User>();
+  private events = new Map<number, Event>();
+  private bookings = new Map<number, Booking>();
+  private notifications = new Map<number, Notification>();
+  private contactMessages = new Map<number, ContactMessage>();
+  private nextEventId = 1;
+  private nextBookingId = 1;
+  private nextNotificationId = 1;
+  private nextContactMessageId = 1;
+
+  constructor() {
+    this.createSampleEvents();
+  }
+
   // User operations
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return this.users.get(id);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    return Array.from(this.users.values()).find(user => user.email === email);
   }
 
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(desc(users.createdAt));
+    return Array.from(this.users.values()).sort((a, b) => 
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
   }
 
   async upsertUser(userData: Partial<UpsertUser> & { id: string }): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values({
-        id: userData.id,
-        email: userData.email || '',
-        firstName: userData.firstName || null,
-        lastName: userData.lastName || null,
-        username: userData.username || null,
-        password: userData.password || null,
-        profileImageUrl: userData.profileImageUrl || null,
-        isAdmin: userData.isAdmin || false,
-        authProvider: userData.authProvider || 'local',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          email: userData.email || users.email,
-          firstName: userData.firstName || users.firstName,
-          lastName: userData.lastName || users.lastName,
-          username: userData.username || users.username,
-          profileImageUrl: userData.profileImageUrl || users.profileImageUrl,
-          isAdmin: userData.isAdmin || users.isAdmin,
-          authProvider: userData.authProvider || users.authProvider,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
+    const now = new Date();
+    const existingUser = this.users.get(userData.id);
+    
+    const user: User = {
+      id: userData.id,
+      email: userData.email || existingUser?.email || '',
+      firstName: userData.firstName !== undefined ? userData.firstName : existingUser?.firstName || null,
+      lastName: userData.lastName !== undefined ? userData.lastName : existingUser?.lastName || null,
+      username: userData.username !== undefined ? userData.username : existingUser?.username || null,
+      password: userData.password !== undefined ? userData.password : existingUser?.password || null,
+      profileImageUrl: userData.profileImageUrl !== undefined ? userData.profileImageUrl : existingUser?.profileImageUrl || null,
+      isAdmin: userData.isAdmin !== undefined ? userData.isAdmin : existingUser?.isAdmin || false,
+      stripeCustomerId: existingUser?.stripeCustomerId || null,
+      authProvider: userData.authProvider || existingUser?.authProvider || 'local',
+      authProviderId: userData.authProviderId !== undefined ? userData.authProviderId : existingUser?.authProviderId || null,
+      createdAt: existingUser?.createdAt || now,
+      updatedAt: now,
+    };
+    
+    this.users.set(userData.id, user);
     return user;
   }
 
   async createUser(userData: Partial<UpsertUser> & { email: string }): Promise<User> {
     const id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const [user] = await db
-      .insert(users)
-      .values({ ...userData, id })
-      .returning();
+    const now = new Date();
+    
+    const user: User = {
+      id,
+      email: userData.email,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      username: userData.username || null,
+      password: userData.password || null,
+      profileImageUrl: userData.profileImageUrl || null,
+      isAdmin: userData.isAdmin || false,
+      stripeCustomerId: null,
+      authProvider: userData.authProvider || 'local',
+      authProviderId: userData.authProviderId || null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.users.set(id, user);
     return user;
   }
 
   // Event operations
   async createEvent(event: InsertEvent): Promise<Event> {
-    const [createdEvent] = await db.insert(events).values(event).returning();
-    return createdEvent;
+    const now = new Date();
+    const newEvent: Event = {
+      id: this.nextEventId++,
+      name: event.name,
+      description: event.description || null,
+      category: event.category,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      location: event.location,
+      ticketPrice: event.ticketPrice,
+      maxAttendees: event.maxAttendees,
+      currentAttendees: 0,
+      status: event.status || 'draft',
+      imageUrl: event.imageUrl || null,
+      createdBy: event.createdBy,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.events.set(newEvent.id, newEvent);
+    return newEvent;
   }
 
   async getEvents(filters?: { search?: string; category?: string; status?: string }): Promise<Event[]> {
-    const conditions = [];
+    let events = Array.from(this.events.values());
     
     if (filters?.search) {
-      conditions.push(
-        or(
-          ilike(events.name, `%${filters.search}%`),
-          ilike(events.description, `%${filters.search}%`)
-        )
+      const searchLower = filters.search.toLowerCase();
+      events = events.filter(event => 
+        event.name.toLowerCase().includes(searchLower) ||
+        (event.description && event.description.toLowerCase().includes(searchLower))
       );
     }
     
     if (filters?.category) {
-      conditions.push(eq(events.category, filters.category));
+      events = events.filter(event => event.category === filters.category);
     }
     
     if (filters?.status) {
-      conditions.push(eq(events.status, filters.status));
+      events = events.filter(event => event.status === filters.status);
     }
     
-    if (conditions.length > 0) {
-      return await db
-        .select()
-        .from(events)
-        .where(and(...conditions))
-        .orderBy(desc(events.createdAt));
-    }
-    
-    return await db
-      .select()
-      .from(events)
-      .orderBy(desc(events.createdAt));
+    return events.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   }
 
   async getEvent(id: number): Promise<EventWithBookings | undefined> {
-    const [event] = await db
-      .select()
-      .from(events)
-      .leftJoin(bookings, eq(events.id, bookings.eventId))
-      .leftJoin(users, eq(events.createdBy, users.id))
-      .where(eq(events.id, id));
-      
-    if (!event.events) return undefined;
+    const event = this.events.get(id);
+    if (!event) return undefined;
     
-    const eventBookings = await db
-      .select()
-      .from(bookings)
-      .where(eq(bookings.eventId, id));
-      
+    const eventBookings = Array.from(this.bookings.values()).filter(booking => booking.eventId === id);
+    const creator = this.users.get(event.createdBy);
+    
     return {
-      ...event.events,
+      ...event,
       bookings: eventBookings,
-      creator: event.users!,
+      creator: creator!,
     };
   }
 
   async updateEvent(id: number, updates: Partial<InsertEvent>): Promise<Event> {
-    const [updatedEvent] = await db
-      .update(events)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(events.id, id))
-      .returning();
+    const event = this.events.get(id);
+    if (!event) throw new Error('Event not found');
+    
+    const updatedEvent: Event = {
+      ...event,
+      ...updates,
+      updatedAt: new Date(),
+    };
+    
+    this.events.set(id, updatedEvent);
     return updatedEvent;
   }
 
   async deleteEvent(id: number): Promise<void> {
-    await db.delete(events).where(eq(events.id, id));
+    this.events.delete(id);
+    // Also delete related bookings
+    Array.from(this.bookings.entries())
+      .filter(([, booking]) => booking.eventId === id)
+      .forEach(([bookingId]) => this.bookings.delete(bookingId));
   }
 
   async updateEventAttendeeCount(eventId: number): Promise<void> {
-    const [{ attendeeCount }] = await db
-      .select({ attendeeCount: sql<number>`sum(${bookings.quantity})` })
-      .from(bookings)
-      .where(and(eq(bookings.eventId, eventId), eq(bookings.status, 'confirmed')));
-      
-    await db
-      .update(events)
-      .set({ currentAttendees: attendeeCount || 0 })
-      .where(eq(events.id, eventId));
+    const event = this.events.get(eventId);
+    if (!event) return;
+    
+    const confirmedBookings = Array.from(this.bookings.values())
+      .filter(booking => booking.eventId === eventId && booking.status === 'confirmed');
+    
+    const totalAttendees = confirmedBookings.reduce((sum, booking) => sum + booking.quantity, 0);
+    
+    this.events.set(eventId, {
+      ...event,
+      currentAttendees: totalAttendees,
+      updatedAt: new Date(),
+    });
   }
 
   // Booking operations
   async createBooking(booking: InsertBooking): Promise<Booking> {
-    const bookingReference = this.generateBookingReference();
-    const [createdBooking] = await db
-      .insert(bookings)
-      .values({ ...booking, bookingReference })
-      .returning();
-    return createdBooking;
+    const now = new Date();
+    const reference = `BK${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+    
+    const newBooking: Booking = {
+      id: this.nextBookingId++,
+      eventId: booking.eventId,
+      userId: booking.userId,
+      quantity: booking.quantity,
+      totalAmount: booking.totalAmount,
+      status: booking.status || 'pending',
+      stripePaymentIntentId: booking.stripePaymentIntentId || null,
+      bookingReference: reference,
+      attendeeEmail: booking.attendeeEmail,
+      attendeeName: booking.attendeeName,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.bookings.set(newBooking.id, newBooking);
+    return newBooking;
   }
 
   async getBookings(userId?: string, eventId?: number): Promise<BookingWithEvent[]> {
-    const conditions = [];
-    if (userId) conditions.push(eq(bookings.userId, userId));
-    if (eventId) conditions.push(eq(bookings.eventId, eventId));
+    let bookings = Array.from(this.bookings.values());
     
-    let results;
-    if (conditions.length > 0) {
-      results = await db
-        .select()
-        .from(bookings)
-        .leftJoin(events, eq(bookings.eventId, events.id))
-        .leftJoin(users, eq(bookings.userId, users.id))
-        .where(and(...conditions))
-        .orderBy(desc(bookings.createdAt));
-    } else {
-      results = await db
-        .select()
-        .from(bookings)
-        .leftJoin(events, eq(bookings.eventId, events.id))
-        .leftJoin(users, eq(bookings.userId, users.id))
-        .orderBy(desc(bookings.createdAt));
+    if (userId) {
+      bookings = bookings.filter(booking => booking.userId === userId);
     }
     
-    return results.map(result => ({
-      ...result.bookings!,
-      event: result.events!,
-      user: result.users!,
+    if (eventId) {
+      bookings = bookings.filter(booking => booking.eventId === eventId);
+    }
+    
+    return bookings.map(booking => ({
+      ...booking,
+      event: this.events.get(booking.eventId)!,
+      user: this.users.get(booking.userId)!,
     }));
   }
 
   async getBooking(id: number): Promise<BookingWithEvent | undefined> {
-    const [result] = await db
-      .select()
-      .from(bookings)
-      .leftJoin(events, eq(bookings.eventId, events.id))
-      .leftJoin(users, eq(bookings.userId, users.id))
-      .where(eq(bookings.id, id));
-      
-    if (!result.bookings) return undefined;
+    const booking = this.bookings.get(id);
+    if (!booking) return undefined;
     
     return {
-      ...result.bookings,
-      event: result.events!,
-      user: result.users!,
+      ...booking,
+      event: this.events.get(booking.eventId)!,
+      user: this.users.get(booking.userId)!,
     };
   }
 
   async getBookingByReference(reference: string): Promise<BookingWithEvent | undefined> {
-    const [result] = await db
-      .select()
-      .from(bookings)
-      .leftJoin(events, eq(bookings.eventId, events.id))
-      .leftJoin(users, eq(bookings.userId, users.id))
-      .where(eq(bookings.bookingReference, reference));
-      
-    if (!result.bookings) return undefined;
+    const booking = Array.from(this.bookings.values()).find(b => b.bookingReference === reference);
+    if (!booking) return undefined;
     
     return {
-      ...result.bookings,
-      event: result.events!,
-      user: result.users!,
+      ...booking,
+      event: this.events.get(booking.eventId)!,
+      user: this.users.get(booking.userId)!,
     };
   }
 
   async updateBookingStatus(id: number, status: string, paymentIntentId?: string): Promise<Booking> {
-    const updates: any = { status, updatedAt: new Date() };
-    if (paymentIntentId) updates.stripePaymentIntentId = paymentIntentId;
+    const booking = this.bookings.get(id);
+    if (!booking) throw new Error('Booking not found');
     
-    const [updatedBooking] = await db
-      .update(bookings)
-      .set(updates)
-      .where(eq(bookings.id, id))
-      .returning();
-      
-    // Update attendee count if booking is confirmed
-    if (status === 'confirmed') {
-      await this.updateEventAttendeeCount(updatedBooking.eventId);
+    const updatedBooking: Booking = {
+      ...booking,
+      status,
+      stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
+      updatedAt: new Date(),
+    };
+    
+    this.bookings.set(id, updatedBooking);
+    
+    // Update event attendee count if booking is confirmed or cancelled
+    if (status === 'confirmed' || status === 'cancelled') {
+      await this.updateEventAttendeeCount(booking.eventId);
     }
     
     return updatedBooking;
   }
 
   // Analytics
-  async getDashboardStats() {
-    const [eventStats] = await db
-      .select({ count: count() })
-      .from(events)
-      .where(eq(events.status, 'active'));
-      
-    const [attendeeStats] = await db
-      .select({ total: sql<number>`sum(${events.currentAttendees})` })
-      .from(events);
-      
-    const [revenueStats] = await db
-      .select({ total: sql<number>`sum(${bookings.totalAmount})` })
-      .from(bookings)
-      .where(eq(bookings.status, 'confirmed'));
-      
-    const [totalBookings] = await db.select({ count: count() }).from(bookings);
-    const [confirmedBookings] = await db
-      .select({ count: count() })
-      .from(bookings)
-      .where(eq(bookings.status, 'confirmed'));
-      
-    const conversionRate = totalBookings.count > 0 
-      ? (confirmedBookings.count / totalBookings.count) * 100 
-      : 0;
-
+  async getDashboardStats(): Promise<{
+    totalEvents: number;
+    totalAttendees: number;
+    totalRevenue: number;
+    conversionRate: number;
+  }> {
+    const totalEvents = this.events.size;
+    const confirmedBookings = Array.from(this.bookings.values()).filter(b => b.status === 'confirmed');
+    const totalAttendees = confirmedBookings.reduce((sum, booking) => sum + booking.quantity, 0);
+    const totalRevenue = confirmedBookings.reduce((sum, booking) => sum + parseFloat(booking.totalAmount), 0);
+    const totalBookings = this.bookings.size;
+    const conversionRate = totalBookings > 0 ? (confirmedBookings.length / totalBookings) * 100 : 0;
+    
     return {
-      totalEvents: eventStats.count,
-      totalAttendees: attendeeStats.total || 0,
-      totalRevenue: Number(revenueStats.total || 0),
-      conversionRate: Math.round(conversionRate * 10) / 10,
+      totalEvents,
+      totalAttendees,
+      totalRevenue,
+      conversionRate,
     };
   }
 
-  // Analytics methods
-  async getRevenueAnalytics() {
-    const revenueByMonth = await db
-      .select({
-        month: sql<string>`EXTRACT(MONTH FROM ${bookings.createdAt})`,
-        year: sql<string>`EXTRACT(YEAR FROM ${bookings.createdAt})`,
-        revenue: sql<number>`sum(${bookings.totalAmount})`,
-      })
-      .from(bookings)
-      .where(eq(bookings.status, 'confirmed'))
-      .groupBy(sql`EXTRACT(YEAR FROM ${bookings.createdAt}), EXTRACT(MONTH FROM ${bookings.createdAt})`)
-      .orderBy(sql`EXTRACT(YEAR FROM ${bookings.createdAt}), EXTRACT(MONTH FROM ${bookings.createdAt})`);
-
-    return revenueByMonth;
+  async getRevenueAnalytics(): Promise<any> {
+    // Simple analytics - could be expanded
+    return [];
   }
 
-  async getAttendeeAnalytics() {
-    const attendeesByEvent = await db
-      .select({
-        eventName: events.name,
-        attendees: sql<number>`sum(${bookings.quantity})`,
-        revenue: sql<number>`sum(${bookings.totalAmount})`,
-      })
-      .from(bookings)
-      .leftJoin(events, eq(bookings.eventId, events.id))
-      .where(eq(bookings.status, 'confirmed'))
-      .groupBy(events.id, events.name)
-      .orderBy(sql`sum(${bookings.quantity}) DESC`);
-
-    return attendeesByEvent;
+  async getAttendeeAnalytics(): Promise<any> {
+    return [];
   }
 
-  async getEventAnalytics() {
-    const eventsByCategory = await db
-      .select({
-        category: events.category,
-        eventCount: count(),
-        totalAttendees: sql<number>`sum(${events.currentAttendees})`,
-      })
-      .from(events)
-      .groupBy(events.category)
-      .orderBy(count());
+  async getEventAnalytics(): Promise<any> {
+    return [];
+  }
 
-    return eventsByCategory;
+  // Notification operations
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const now = new Date();
+    const newNotification: Notification = {
+      id: this.nextNotificationId++,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      isRead: notification.isRead || false,
+      metadata: notification.metadata || null,
+      createdAt: now,
+    };
+    
+    this.notifications.set(newNotification.id, newNotification);
+    return newNotification;
+  }
+
+  async getNotifications(userId: string): Promise<Notification[]> {
+    return Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId)
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }
+
+  async markNotificationAsRead(id: number, userId: string): Promise<Notification> {
+    const notification = this.notifications.get(id);
+    if (!notification || notification.userId !== userId) {
+      throw new Error('Notification not found');
+    }
+    
+    const updatedNotification = { ...notification, isRead: true };
+    this.notifications.set(id, updatedNotification);
+    return updatedNotification;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    Array.from(this.notifications.entries())
+      .filter(([, notification]) => notification.userId === userId && !notification.isRead)
+      .forEach(([id, notification]) => {
+        this.notifications.set(id, { ...notification, isRead: true });
+      });
+  }
+
+  async deleteNotification(id: number, userId: string): Promise<void> {
+    const notification = this.notifications.get(id);
+    if (notification && notification.userId === userId) {
+      this.notifications.delete(id);
+    }
+  }
+
+  // Contact message operations
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    const now = new Date();
+    const newMessage: ContactMessage = {
+      id: this.nextContactMessageId++,
+      name: message.name,
+      email: message.email,
+      subject: message.subject,
+      message: message.message,
+      status: message.status || 'new',
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.contactMessages.set(newMessage.id, newMessage);
+    return newMessage;
+  }
+
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return Array.from(this.contactMessages.values())
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }
+
+  async updateContactMessageStatus(id: number, status: string): Promise<ContactMessage> {
+    const message = this.contactMessages.get(id);
+    if (!message) throw new Error('Contact message not found');
+    
+    const updatedMessage: ContactMessage = {
+      ...message,
+      status,
+      updatedAt: new Date(),
+    };
+    
+    this.contactMessages.set(id, updatedMessage);
+    return updatedMessage;
   }
 
   // Sample data
   async createSampleEvents(): Promise<void> {
-    // Create sample admin user first
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const demoEmail = process.env.DEMO_USER_EMAIL;
-    
-    let adminUser = null;
-    let demoUser = null;
-    
-    if (adminEmail) {
-      adminUser = await this.getUserByEmail(adminEmail);
-      if (!adminUser) {
-        adminUser = await this.createUser({
-          email: adminEmail,
-          firstName: 'Admin',
-          lastName: 'User',
-          isAdmin: true,
-        });
-      }
-    }
-    
-    if (demoEmail) {
-      demoUser = await this.getUserByEmail(demoEmail);
-      if (!demoUser) {
-        demoUser = await this.createUser({
-          email: demoEmail,
-          firstName: 'Demo',
-          lastName: 'User',
-          isAdmin: false,
-        });
-      }
-    }
+    // Create default admin user
+    const adminUser: User = {
+      id: 'admin_user',
+      email: 'akshadapastambh37@gmail.com',
+      firstName: 'Admin',
+      lastName: 'User',
+      username: 'admin',
+      password: 'Akshad@11',
+      profileImageUrl: null,
+      isAdmin: true,
+      stripeCustomerId: null,
+      authProvider: 'local',
+      authProviderId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.users.set(adminUser.id, adminUser);
 
+    // Create sample events
     const sampleEvents = [
       {
-        name: "Tech Conference 2024",
-        description: "Join industry leaders for cutting-edge tech insights and networking opportunities.",
-        category: "conference",
-        startDate: new Date("2024-03-15T09:00:00"),
-        endDate: new Date("2024-03-15T18:00:00"),
+        name: "AI Revolution Conference 2025",
+        description: "Join industry leaders to explore the latest in artificial intelligence, machine learning, and the future of technology.",
+        category: "Technology",
+        startDate: new Date('2025-09-15T09:00:00Z'),
+        endDate: new Date('2025-09-15T17:00:00Z'),
         location: "San Francisco Convention Center",
-        ticketPrice: "99.00",
+        ticketPrice: "299.00",
         maxAttendees: 500,
-        currentAttendees: 342,
         status: "active",
-        imageUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
-        createdBy: adminUser?.id || "admin-user",
-      },
-      {
-        name: "Summer Music Festival",
-        description: "Three days of incredible music featuring top artists from around the world.",
-        category: "festival",
-        startDate: new Date("2024-06-20T14:00:00"),
-        endDate: new Date("2024-06-22T23:00:00"),
-        location: "Golden Gate Park",
-        ticketPrice: "75.00",
-        maxAttendees: 2000,
-        currentAttendees: 1205,
-        status: "upcoming",
-        imageUrl: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
-        createdBy: adminUser?.id || "admin-user",
-      },
-      {
-        name: "Digital Marketing Workshop",
-        description: "Learn the latest digital marketing strategies from industry experts.",
-        category: "workshop",
-        startDate: new Date("2024-04-08T10:00:00"),
-        endDate: new Date("2024-04-08T16:00:00"),
-        location: "WeWork Downtown",
-        ticketPrice: "149.00",
-        maxAttendees: 50,
-        currentAttendees: 0,
-        status: "draft",
-        imageUrl: "https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
-        createdBy: adminUser?.id || "admin-user",
-      },
-      {
-        name: "AI & Machine Learning Summit",
-        description: "Deep dive into the latest AI technologies and machine learning frameworks.",
-        category: "conference",
-        startDate: new Date("2024-05-12T09:00:00"),
-        endDate: new Date("2024-05-12T17:00:00"),
-        location: "Silicon Valley Convention Center",
-        ticketPrice: "179.00",
-        maxAttendees: 300,
-        currentAttendees: 245,
-        status: "active",
-        imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
-        createdBy: adminUser?.id || "admin-user",
+        imageUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800",
+        createdBy: adminUser.id,
       },
       {
         name: "Web Development Bootcamp",
-        description: "Intensive hands-on workshop covering modern web development practices.",
-        category: "workshop",
-        startDate: new Date("2024-07-15T10:00:00"),
-        endDate: new Date("2024-07-17T16:00:00"),
-        location: "TechHub Downtown",
-        ticketPrice: "299.00",
-        maxAttendees: 80,
-        currentAttendees: 67,
+        description: "Intensive workshop covering React, Node.js, and modern full-stack development practices.",
+        category: "Technology",
+        startDate: new Date('2025-08-20T10:00:00Z'),
+        endDate: new Date('2025-08-22T16:00:00Z'),
+        location: "Tech Hub Downtown",
+        ticketPrice: "149.00",
+        maxAttendees: 50,
         status: "active",
-        imageUrl: "https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=250",
-        createdBy: adminUser?.id || "admin-user",
+        imageUrl: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800",
+        createdBy: adminUser.id,
+      },
+      {
+        name: "Mobile App Development Summit",
+        description: "Learn the latest in iOS and Android development with hands-on workshops and expert speakers.",
+        category: "Technology",
+        startDate: new Date('2025-10-05T09:00:00Z'),
+        endDate: new Date('2025-10-06T17:00:00Z'),
+        location: "Innovation Center",
+        ticketPrice: "199.00",
+        maxAttendees: 200,
+        status: "upcoming",
+        imageUrl: "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800",
+        createdBy: adminUser.id,
       },
     ];
 
-    // Insert events and create sample bookings
-    for (const eventData of sampleEvents) {
-      const [event] = await db.insert(events).values(eventData).onConflictDoNothing().returning();
-      
-      if (event && demoUser && (event.currentAttendees || 0) > 0) {
-        // Create sample bookings for events with attendees
-        const attendeeCount = event.currentAttendees || 0;
-        const quantity = Math.min(2, attendeeCount);
-        const sampleBookings = [
-          {
-            eventId: event.id,
-            userId: demoUser.id,
-            quantity: quantity,
-            totalAmount: String(parseFloat(event.ticketPrice) * quantity),
-            status: "confirmed" as const,
-            attendeeEmail: demoUser.email,
-            attendeeName: `${demoUser.firstName} ${demoUser.lastName}`,
-          },
-        ];
-
-        for (const booking of sampleBookings) {
-          await db.insert(bookings).values({
-            ...booking,
-            bookingReference: this.generateBookingReference(),
-          }).onConflictDoNothing();
-        }
-      }
+    for (const event of sampleEvents) {
+      await this.createEvent(event);
     }
-  }
-
-  // Notification operations
-  async createNotification(notificationData: InsertNotification): Promise<Notification> {
-    const [notification] = await db.insert(notifications).values(notificationData).returning();
-    return notification;
-  }
-
-  async getNotifications(userId: string): Promise<Notification[]> {
-    return await db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.userId, userId))
-      .orderBy(desc(notifications.createdAt));
-  }
-
-  async markNotificationAsRead(id: number, userId: string): Promise<Notification> {
-    const [notification] = await db
-      .update(notifications)
-      .set({ isRead: true })
-      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
-      .returning();
-    return notification;
-  }
-
-  async markAllNotificationsAsRead(userId: string): Promise<void> {
-    await db
-      .update(notifications)
-      .set({ isRead: true })
-      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
-  }
-
-  async deleteNotification(id: number, userId: string): Promise<void> {
-    await db
-      .delete(notifications)
-      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
-  }
-
-  // Contact message operations
-  async createContactMessage(messageData: InsertContactMessage): Promise<ContactMessage> {
-    const [message] = await db.insert(contactMessages).values(messageData).returning();
-    return message;
-  }
-
-  async getContactMessages(): Promise<ContactMessage[]> {
-    return await db
-      .select()
-      .from(contactMessages)
-      .orderBy(desc(contactMessages.createdAt));
-  }
-
-  async updateContactMessageStatus(id: number, status: string): Promise<ContactMessage> {
-    const [message] = await db
-      .update(contactMessages)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(contactMessages.id, id))
-      .returning();
-    return message;
-  }
-
-  private generateBookingReference(): string {
-    return Math.random().toString(36).substring(2, 10).toUpperCase();
   }
 }
 
-export const storage = new DatabaseStorage();
+// Create and export storage instance
+export const storage = new MemStorage();

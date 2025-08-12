@@ -1,11 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import passport from "passport";
-import { connectToMongoDB } from "./mongodb";
-import { storage } from "./mongodb-storage";
+import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
-import { setupAuth0 } from "./auth0";
-// Using MongoDB with flexible validation
+// Using in-memory storage with Zod validation
 import { z } from "zod";
 import nodemailer from "nodemailer";
 
@@ -144,12 +142,8 @@ const isAuthenticated = (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Connect to MongoDB
-  await connectToMongoDB();
-  console.log('Connected to MongoDB successfully');
-  
-  // MongoDB is already populated with migrated data
-  console.log('MongoDB database is ready with migrated data');
+  console.log('Using in-memory storage for clean Replit environment');
+  console.log('Sample events and admin user loaded automatically');
   
   // Check if Auth0 is configured
   const isAuth0Configured = !!(
