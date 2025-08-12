@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import passport from "passport";
 import { storage } from "./storage";
-import { setupAuth } from "./replitAuth";
 import { authenticateUser, createUser, requireAuth, requireAdmin, type AuthUser } from "./auth-simple";
 // Using in-memory storage with Zod validation
 import { z } from "zod";
@@ -141,7 +140,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Remove Auth0 completely - use only simple authentication
   console.log('Using simple authentication system...');
-  setupAuth(app);
+  // Setup authentication based on environment
+  if (process.env.REPLIT_DOMAINS) {
+    try {
+      const { setupAuth } = await import("./replitAuth");
+      setupAuth(app);
+      console.log("Replit authentication system initialized");
+    } catch (error) {
+      console.log("Failed to initialize Replit auth, using simple auth instead");
+    }
+  } else {
+    console.log("Using simple authentication system...");
+  }
 
   // Simple authentication routes
   app.post('/api/auth/register', async (req, res) => {

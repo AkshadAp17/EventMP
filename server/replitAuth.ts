@@ -9,7 +9,8 @@ import MemoryStore from "memorystore";
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+  console.log("REPLIT_DOMAINS not found - this is expected for production deployment outside Replit");
+  // Don't throw error - just continue with warning
 }
 
 const getOidcConfig = memoize(
@@ -65,6 +66,12 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
+  // Skip Replit auth setup if REPLIT_DOMAINS is not available
+  if (!process.env.REPLIT_DOMAINS) {
+    console.log("Skipping Replit auth setup - REPLIT_DOMAINS not configured");
+    return;
+  }
+  
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -154,8 +161,8 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  const domains = process.env.REPLIT_DOMAINS?.split(",") || [];
+  for (const domain of domains) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
