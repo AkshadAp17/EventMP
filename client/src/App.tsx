@@ -16,6 +16,8 @@ import AuthChoice from "@/pages/auth-choice";
 import About from "@/pages/about";
 import Contact from "@/pages/contact";
 import Users from "@/pages/users";
+import Profile from "@/pages/profile";
+import MyTickets from "@/pages/my-tickets";
 import type { User } from "@shared/schema";
 
 function Router() {
@@ -43,6 +45,8 @@ function Router() {
       {/* Protected routes */}
       <ProtectedRoute path="/admin" component={AdminDashboard} />
       <ProtectedRoute path="/admin/users" component={Users} />
+      <ProtectedRoute path="/profile" component={Profile} />
+      <ProtectedRoute path="/my-tickets" component={MyTickets} />
       <ProtectedRoute path="/checkout/:bookingId" component={Checkout} />
       
       <Route component={NotFound} />

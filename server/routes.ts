@@ -185,13 +185,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      // Create user with proper ID generation
+      // Create user with proper ID generation and store password
       const user = await storage.createUser({
         email,
         firstName: firstName || username || email.split('@')[0],
         lastName: lastName || '',
         isAdmin: false,
         authProvider: "local",
+        password: password, // Store password for later authentication
       });
 
       // Set up session after registration
@@ -258,6 +259,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         isValidLogin = true;
+      } else {
+        // Check for registered users
+        user = await storage.getUserByEmail(email);
+        if (user && user.password === password) {
+          isValidLogin = true;
+        }
       }
 
       if (!isValidLogin || !user) {

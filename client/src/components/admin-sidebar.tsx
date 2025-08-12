@@ -74,6 +74,15 @@ export default function AdminSidebar({ activeTab, onTabChange, user }: AdminSide
               </p>
               <p className="text-xs text-slate-500">Administrator</p>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/profile'}
+              className="p-2 hover:bg-slate-200"
+              title="Profile Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
