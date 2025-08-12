@@ -156,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   if (isAuth0Configured) {
     console.log('Setting up Auth0 authentication...');
-    setupAuth0(app);
+    // setupAuth0(app); // Auth0 setup not available
   } else {
     console.log('Auth0 not configured, using Replit authentication...');
     setupAuth(app);
@@ -431,11 +431,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/events/:id', async (req, res) => {
     try {
+      console.log('Looking for event with ID:', req.params.id);
       const eventId = parseInt(req.params.id);
       if (isNaN(eventId)) {
         return res.status(400).json({ message: "Invalid event ID" });
       }
       const event = await storage.getEvent(eventId);
+      console.log('Event found:', event ? 'YES' : 'NO');
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
@@ -592,6 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         quantity,
         totalAmount,
         status: 'confirmed', // Auto-confirm since no payment processing
+        stripePaymentIntentId: null, // No Stripe processing
         bookingReference,
         attendeeEmail: user.email || req.body.attendeeEmail,
         attendeeName: req.body.attendeeName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,

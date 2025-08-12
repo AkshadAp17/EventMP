@@ -180,16 +180,38 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  async getEvent(id: number): Promise<EventWithBookings | undefined> {
+  async getEvent(id: number): Promise<any> {
     try {
-      const event = await EventModel.findById(id.toString()).exec();
+      // Get all events and find the one that matches the numeric ID
+      const events = await this.getEvents({});
+      const event = events.find(e => e.id === id);
+      
       if (!event) return undefined;
       
-      const bookings = await BookingModel.find({ eventId: id.toString() }).exec();
+      // Get bookings for this event
+      const bookings = await BookingModel.find({ 
+        eventId: event.id.toString() 
+      }).exec();
+      
       return {
-        ...event.toObject(),
-        id: event._id,
-        bookings: bookings.map(booking => ({ ...booking.toObject(), id: booking._id }))
+        ...event,
+        bookings: bookings.map(booking => {
+          const bookingObj = booking.toObject();
+          return {
+            id: parseInt(bookingObj._id) || bookingObj._id,
+            eventId: parseInt(bookingObj.eventId) || bookingObj.eventId,
+            userId: bookingObj.userId,
+            quantity: bookingObj.quantity,
+            totalAmount: bookingObj.totalAmount,
+            status: bookingObj.status,
+            stripePaymentIntentId: bookingObj.stripePaymentIntentId,
+            bookingReference: bookingObj.bookingReference,
+            attendeeEmail: bookingObj.attendeeEmail,
+            attendeeName: bookingObj.attendeeName,
+            createdAt: bookingObj.createdAt,
+            updatedAt: bookingObj.updatedAt,
+          };
+        })
       };
     } catch (error) {
       console.error('Error getting event:', error);
