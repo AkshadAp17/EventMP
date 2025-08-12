@@ -8,6 +8,7 @@ import { authenticateUser, createUser, requireAuth, requireAdmin, type AuthUser 
 import { z } from "zod";
 import { insertEventSchema, insertBookingSchema, insertContactMessageSchema } from "@shared/schema";
 import nodemailer from "nodemailer";
+import bcrypt from "bcryptjs";
 
 // Email transporter setup
 const transporter = nodemailer.createTransport({
