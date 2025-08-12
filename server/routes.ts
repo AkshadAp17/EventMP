@@ -158,19 +158,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Simple authentication routes
   app.post('/api/auth/register', async (req, res) => {
     try {
-      const { email, password, name } = req.body;
+      const { email, password, firstName, lastName, username, name } = req.body;
       
-      if (!email || !password || !name) {
+      // Handle different form structures from both auth pages
+      const fullName = name || `${firstName || ''} ${lastName || ''}`.trim() || username || email.split('@')[0];
+
+      if (!email || !password || !fullName) {
         return res.status(400).json({ message: "Email, password, and name are required" });
       }
 
-      // Check if user already exists (simplified check)
-      const existingDemoUser = email === 'admin@eventmaster.com' || email === 'user@eventmaster.com';
-      if (existingDemoUser) {
-        return res.status(409).json({ message: "User already exists. Please use login." });
+      // Check if user already exists 
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "User already exists. Please sign in instead." });
       }
 
-      const user = await createUser(email, password, name);
+      const user = await createUser(email, password, fullName);
       
       // Set up session
       (req.session as any).user = user;

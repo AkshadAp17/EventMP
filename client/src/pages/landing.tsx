@@ -17,7 +17,7 @@ export default function Landing() {
           
           <div className="flex items-center space-x-2 lg:space-x-4">
             <Button 
-              onClick={() => window.location.href = '/auth-choice'}
+              onClick={() => window.location.href = '/login'}
               className="bg-primary hover:bg-primary/90 shadow-glow transition-all duration-300 hover:scale-105 text-sm lg:text-base px-3 lg:px-4"
             >
               Sign In
