@@ -276,10 +276,8 @@ export class MongoStorage implements IStorage {
       
       await booking.save();
       
-      // Update event attendee count
-      if (bookingData.status === 'confirmed') {
-        await this.updateEventAttendeeCount(parseInt(bookingData.eventId));
-      }
+      // Always update event attendee count when booking is created
+      await this.updateEventAttendeeCount(parseInt(bookingData.eventId));
       
       return { ...booking.toObject(), id: booking._id };
     } catch (error) {

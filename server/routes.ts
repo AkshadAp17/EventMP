@@ -649,7 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send confirmation email to user
       const bookingDetails = await storage.getBooking(parseInt(bookingId));
-      if (bookingDetails) {
+      if (bookingDetails && bookingDetails.event) {
         const confirmationEmail = `
           <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #10b981; text-align: center;">Booking Confirmed!</h2>
