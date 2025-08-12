@@ -219,7 +219,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingUser && (existingUser.passwordHash || existingUser.password)) {
           const passwordToCheck = existingUser.passwordHash || existingUser.password || '';
           console.log('User found with password field:', !!passwordToCheck);
-          const isValidPassword = await bcrypt.compare(password, passwordToCheck);
+          console.log('Password in DB looks like hash:', passwordToCheck.startsWith('$2'));
+          
+          let isValidPassword = false;
+          
+          // Check if password is hashed or plain text
+          if (passwordToCheck.startsWith('$2')) {
+            // Password is hashed with bcrypt
+            isValidPassword = await bcrypt.compare(password, passwordToCheck);
+          } else {
+            // Password might be stored as plain text (legacy data)
+            isValidPassword = password === passwordToCheck;
+          }
+          
           console.log('Password validation result:', isValidPassword);
           
           if (isValidPassword) {
