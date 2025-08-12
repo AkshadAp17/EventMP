@@ -140,14 +140,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   if (isAuth0Configured) {
     console.log('Setting up Auth0 authentication...');
-    // setupAuth0(app); // Auth0 setup not available
+    const { setupAuth0 } = await import('./auth0');
+    setupAuth0(app);
   } else {
     console.log('Auth0 not configured, using Replit authentication...');
     setupAuth(app);
     
     // Add fallback routes for Auth0 paths when Auth0 is not configured
     app.get('/auth/login', (req, res) => {
-      res.redirect('/login');
+      res.redirect('/auth');
     });
     
     app.get('/auth/logout', (req, res) => {
