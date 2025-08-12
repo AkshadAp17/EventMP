@@ -149,12 +149,76 @@ export const BookingModel = mongoose.model('Booking', bookingMongoSchema);
 export const NotificationModel = mongoose.model('Notification', notificationMongoSchema);
 export const ContactMessageModel = mongoose.model('ContactMessage', contactMessageMongoSchema);
 
-// Type definitions
-export type User = z.infer<typeof UserSchema>;
-export type Event = z.infer<typeof EventSchema>;
-export type Booking = z.infer<typeof BookingSchema>;
-export type Notification = z.infer<typeof NotificationSchema>;
-export type ContactMessage = z.infer<typeof ContactMessageSchema>;
+// Type definitions to match existing schema
+export interface User {
+  id: string;
+  email: string;
+  username: string | null;
+  password: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  isAdmin: boolean | null;
+  stripeCustomerId: string | null;
+  authProvider: string;
+  authProviderId: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
+export interface Event {
+  id: number;
+  name: string;
+  description: string | null;
+  startDate: Date;
+  endDate: Date;
+  location: string;
+  ticketPrice: string;
+  maxAttendees: number;
+  currentAttendees: number;
+  category: string;
+  status: string;
+  imageUrl: string | null;
+  createdBy: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
+export interface Booking {
+  id: number;
+  eventId: number;
+  userId: string;
+  quantity: number;
+  totalAmount: string;
+  status: string;
+  stripePaymentIntentId: string | null;
+  bookingReference: string;
+  attendeeEmail: string;
+  attendeeName: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
+export interface Notification {
+  id: number;
+  userId: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: Date | null;
+}
+
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
 
 // Insert types (without auto-generated fields)
 export type UpsertUser = Omit<User, 'createdAt' | 'updatedAt'>;
