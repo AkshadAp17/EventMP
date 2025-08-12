@@ -54,7 +54,7 @@ export const NotificationSchema = z.object({
   userId: z.string(),
   title: z.string(),
   message: z.string(),
-  type: z.enum(['info', 'success', 'warning', 'error']).default('info'),
+  type: z.enum(['booking_confirmed', 'payment_success', 'event_reminder', 'event_cancelled', 'account_update', 'admin_announcement', 'info', 'success', 'warning', 'error']).default('info'),
   isRead: z.boolean().default(false),
   createdAt: z.date().default(() => new Date()),
 });
@@ -126,8 +126,9 @@ const notificationMongoSchema = new Schema({
   userId: { type: String, required: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
-  type: { type: String, enum: ['info', 'success', 'warning', 'error'], default: 'info' },
+  type: { type: String, enum: ['booking_confirmed', 'payment_success', 'event_reminder', 'event_cancelled', 'account_update', 'admin_announcement', 'info', 'success', 'warning', 'error'], default: 'info' },
   isRead: { type: Boolean, default: false },
+  metadata: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -11,7 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 interface Notification {
   id: number;
   userId: string;
-  type: 'booking_confirmed' | 'payment_success' | 'event_reminder' | 'event_cancelled' | 'account_update';
+  type: 'booking_confirmed' | 'payment_success' | 'event_reminder' | 'event_cancelled' | 'account_update' | 'admin_announcement';
   title: string;
   message: string;
   isRead: boolean;
@@ -32,7 +32,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
     enabled: isOpen,
   });
@@ -91,6 +91,8 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         return <X className="w-5 h-5 text-red-500" />;
       case 'account_update':
         return <User className="w-5 h-5 text-purple-500" />;
+      case 'admin_announcement':
+        return <Settings className="w-5 h-5 text-blue-500" />;
       default:
         return <Bell className="w-5 h-5 text-gray-500" />;
     }
@@ -218,7 +220,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data: notifications = [] } = useQuery({
+  const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
     refetchInterval: 30000, // Refetch every 30 seconds
   });

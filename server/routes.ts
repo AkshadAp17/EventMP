@@ -655,6 +655,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send email confirmation using event details already retrieved
       if (booking && event) {
         await sendBookingConfirmationEmail(booking, event);
+        
+        // Create booking confirmation notification
+        try {
+          await storage.createNotification({
+            userId: userId,
+            type: 'booking_confirmed',
+            title: 'Booking Confirmed!',
+            message: `Your booking for "${event.name}" has been confirmed. Booking reference: ${booking.bookingReference}`,
+            isRead: false,
+            metadata: {
+              bookingId: booking.id,
+              eventId: event.id,
+              actionUrl: '/my-tickets'
+            }
+          });
+          console.log('✅ Booking confirmation notification created for user:', userId);
+        } catch (notificationError) {
+          console.error('❌ Failed to create booking notification:', notificationError);
+        }
       }
       
       // Force manual attendee count update with proper event ID conversion
