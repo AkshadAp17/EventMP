@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, User, Lock, Mail } from "lucide-react";
+import { Calendar, User, Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const loginSchema = z.object({
@@ -31,6 +31,8 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function Login() {
   const [, setLocation] = useLocation();
   const [isRegister, setIsRegister] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -155,7 +157,23 @@ export default function Login() {
                         <FormControl>
                           <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
+                            <Input 
+                              type={showLoginPassword ? "text" : "password"} 
+                              placeholder="••••••••" 
+                              className="pl-10 pr-10" 
+                              {...field} 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowLoginPassword(!showLoginPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                              {showLoginPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -225,7 +243,23 @@ export default function Login() {
                         <FormControl>
                           <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
+                            <Input 
+                              type={showRegisterPassword ? "text" : "password"} 
+                              placeholder="••••••••" 
+                              className="pl-10 pr-10" 
+                              {...field} 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                              {showRegisterPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -268,14 +302,7 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Demo Credentials */}
-            <div className="bg-slate-50 p-4 rounded-lg">
-              <h4 className="text-sm font-medium text-slate-800 mb-2">Demo Credentials:</h4>
-              <div className="space-y-1 text-xs text-slate-600">
-                <p><strong>Admin:</strong> admin@eventmaster.com / admin123</p>
-                <p><strong>User:</strong> user@eventmaster.com / user123</p>
-              </div>
-            </div>
+
           </CardContent>
         </Card>
       </div>
