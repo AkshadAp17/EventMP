@@ -49,7 +49,7 @@ export async function comparePassword(password: string, hash: string): Promise<b
 }
 
 export async function authenticateUser(email: string, password: string): Promise<AuthUser | null> {
-  // Check demo users first
+  // Check demo users first for quick testing
   const demoUser = DEMO_USERS.find(user => user.email === email);
   if (demoUser && demoUser.password === password) {
     return {
@@ -60,25 +60,61 @@ export async function authenticateUser(email: string, password: string): Promise
     };
   }
 
-  // In real implementation, check database here
-  // For now, return null for non-demo users
+  try {
+    // Import storage to check database users
+    const { storage } = await import('./storage');
+    const user = await storage.getUserByEmail(email);
+    
+    if (user && user.password) {
+      const isValidPassword = await comparePassword(password, user.password);
+      if (isValidPassword) {
+        return {
+          id: user.id,
+          email: user.email,
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User',
+          isAdmin: user.isAdmin,
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Database authentication error:', error);
+  }
+
   return null;
 }
 
 export async function createUser(email: string, password: string, name: string): Promise<AuthUser> {
-  // Hash the password
-  const hashedPassword = await hashPassword(password);
-  
-  // In real implementation, save to database
-  // For demo, create a temporary user object
-  const newUser: AuthUser = {
-    id: `user-${Date.now()}`,
-    email,
-    name,
-    isAdmin: false,
-  };
-  
-  return newUser;
+  try {
+    // Hash the password
+    const hashedPassword = await hashPassword(password);
+    
+    // Save to database
+    const { storage } = await import('./storage');
+    const nameParts = name.split(' ');
+    const firstName = nameParts[0] || name;
+    const lastName = nameParts.slice(1).join(' ') || null;
+    
+    const userData = {
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      username: email.split('@')[0], // Use email prefix as username
+      isAdmin: false,
+    };
+    
+    const newUser = await storage.createUser(userData);
+    
+    return {
+      id: newUser.id,
+      email: newUser.email,
+      name: `${newUser.firstName || ''} ${newUser.lastName || ''}`.trim() || newUser.username || 'User',
+      isAdmin: newUser.isAdmin,
+    };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw new Error('Failed to create user account');
+  }
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {

@@ -34,19 +34,19 @@ export class MongoStorage implements IStorage {
       
       const userObj = user.toObject();
       return {
-        id: userObj._id,
-        email: userObj.email,
-        username: userObj.username,
-        password: userObj.password,
-        firstName: userObj.firstName,
-        lastName: userObj.lastName,
-        profileImageUrl: userObj.profileImageUrl,
-        isAdmin: userObj.isAdmin,
-        stripeCustomerId: userObj.stripeCustomerId,
-        authProvider: userObj.authProvider,
-        authProviderId: userObj.authProviderId,
-        createdAt: userObj.createdAt,
-        updatedAt: userObj.updatedAt,
+        id: userObj._id.toString(),
+        email: userObj.email || '',
+        username: userObj.username || null,
+        password: userObj.password || null,
+        firstName: userObj.firstName || null,
+        lastName: userObj.lastName || null,
+        profileImageUrl: userObj.profileImageUrl || null,
+        isAdmin: Boolean(userObj.isAdmin),
+        stripeCustomerId: userObj.stripeCustomerId || null,
+        authProvider: userObj.authProvider || 'local',
+        authProviderId: userObj.authProviderId || null,
+        createdAt: userObj.createdAt || new Date(),
+        updatedAt: userObj.updatedAt || new Date(),
       };
     } catch (error) {
       console.error('Error getting user:', error);
@@ -57,7 +57,24 @@ export class MongoStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
       const user = await UserModel.findOne({ email }).exec();
-      return user ? { ...user.toObject(), id: user._id } : undefined;
+      if (!user) return undefined;
+      
+      const userObj = user.toObject();
+      return {
+        id: userObj._id.toString(),
+        email: userObj.email || '',
+        username: userObj.username || null,
+        password: userObj.password || null,
+        firstName: userObj.firstName || null,
+        lastName: userObj.lastName || null,
+        profileImageUrl: userObj.profileImageUrl || null,
+        isAdmin: Boolean(userObj.isAdmin),
+        stripeCustomerId: userObj.stripeCustomerId || null,
+        authProvider: userObj.authProvider || 'local',
+        authProviderId: userObj.authProviderId || null,
+        createdAt: userObj.createdAt || new Date(),
+        updatedAt: userObj.updatedAt || new Date(),
+      };
     } catch (error) {
       console.error('Error getting user by email:', error);
       return undefined;
@@ -67,7 +84,24 @@ export class MongoStorage implements IStorage {
   async getUsers(): Promise<User[]> {
     try {
       const users = await UserModel.find().sort({ createdAt: -1 }).exec();
-      return users.map(user => ({ ...user.toObject(), id: user._id }));
+      return users.map(user => {
+        const userObj = user.toObject();
+        return {
+          id: userObj._id.toString(),
+          email: userObj.email || '',
+          username: userObj.username || null,
+          password: userObj.password || null,
+          firstName: userObj.firstName || null,
+          lastName: userObj.lastName || null,
+          profileImageUrl: userObj.profileImageUrl || null,
+          isAdmin: Boolean(userObj.isAdmin),
+          stripeCustomerId: userObj.stripeCustomerId || null,
+          authProvider: userObj.authProvider || 'local',
+          authProviderId: userObj.authProviderId || null,
+          createdAt: userObj.createdAt || new Date(),
+          updatedAt: userObj.updatedAt || new Date(),
+        };
+      });
     } catch (error) {
       console.error('Error getting users:', error);
       return [];
@@ -87,7 +121,22 @@ export class MongoStorage implements IStorage {
         { new: true, upsert: true, setDefaultsOnInsert: true }
       ).exec();
       
-      return { ...user!.toObject(), id: user!._id };
+      const userObj = user!.toObject();
+      return {
+        id: userObj._id.toString(),
+        email: userObj.email || '',
+        username: userObj.username || null,
+        password: userObj.password || null,
+        firstName: userObj.firstName || null,
+        lastName: userObj.lastName || null,
+        profileImageUrl: userObj.profileImageUrl || null,
+        isAdmin: Boolean(userObj.isAdmin),
+        stripeCustomerId: userObj.stripeCustomerId || null,
+        authProvider: userObj.authProvider || 'local',
+        authProviderId: userObj.authProviderId || null,
+        createdAt: userObj.createdAt || new Date(),
+        updatedAt: userObj.updatedAt || new Date(),
+      };
     } catch (error) {
       console.error('Error upserting user:', error);
       throw error;
@@ -105,7 +154,22 @@ export class MongoStorage implements IStorage {
       });
       
       await user.save();
-      return { ...user.toObject(), id: user._id };
+      const userObj = user.toObject();
+      return {
+        id: userObj._id.toString(),
+        email: userObj.email || '',
+        username: userObj.username || null,
+        password: userObj.password || null,
+        firstName: userObj.firstName || null,
+        lastName: userObj.lastName || null,
+        profileImageUrl: userObj.profileImageUrl || null,
+        isAdmin: Boolean(userObj.isAdmin),
+        stripeCustomerId: userObj.stripeCustomerId || null,
+        authProvider: userObj.authProvider || 'local',
+        authProviderId: userObj.authProviderId || null,
+        createdAt: userObj.createdAt || new Date(),
+        updatedAt: userObj.updatedAt || new Date(),
+      };
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
@@ -127,7 +191,24 @@ export class MongoStorage implements IStorage {
       });
       
       await event.save();
-      return { ...event.toObject(), id: event._id };
+      const eventObj = event.toObject();
+      return {
+        id: parseInt(eventObj._id.toString()) || 0,
+        name: eventObj.name || '',
+        description: eventObj.description || null,
+        startDate: eventObj.startDate || new Date(),
+        endDate: eventObj.endDate || new Date(),
+        location: eventObj.location || '',
+        ticketPrice: eventObj.ticketPrice || '0',
+        maxAttendees: eventObj.maxAttendees || 0,
+        currentAttendees: eventObj.currentAttendees || 0,
+        category: eventObj.category || '',
+        status: eventObj.status || 'draft',
+        imageUrl: eventObj.imageUrl || null,
+        createdBy: eventObj.createdBy || '',
+        createdAt: eventObj.createdAt || new Date(),
+        updatedAt: eventObj.updatedAt || new Date(),
+      };
     } catch (error) {
       console.error('Error creating event:', error);
       throw error;
@@ -157,18 +238,18 @@ export class MongoStorage implements IStorage {
       return events.map(event => {
         const eventObj = event.toObject();
         return {
-          id: parseInt(eventObj._id) || eventObj._id,
-          name: eventObj.name,
-          description: eventObj.description,
-          startDate: eventObj.startDate,
-          endDate: eventObj.endDate,
-          location: eventObj.location,
-          ticketPrice: eventObj.ticketPrice,
-          maxAttendees: eventObj.maxAttendees,
-          currentAttendees: eventObj.currentAttendees,
-          category: eventObj.category,
-          status: eventObj.status,
-          imageUrl: eventObj.imageUrl,
+          id: parseInt(eventObj._id.toString()) || 0,
+          name: eventObj.name || '',
+          description: eventObj.description || null,
+          startDate: eventObj.startDate || new Date(),
+          endDate: eventObj.endDate || new Date(),
+          location: eventObj.location || '',
+          ticketPrice: eventObj.ticketPrice || '0',
+          maxAttendees: eventObj.maxAttendees || 0,
+          currentAttendees: eventObj.currentAttendees || 0,
+          category: eventObj.category || '',
+          status: eventObj.status || 'draft',
+          imageUrl: eventObj.imageUrl || null,
           createdBy: eventObj.createdBy || eventObj.organizerId,
           createdAt: eventObj.createdAt,
           updatedAt: eventObj.updatedAt,

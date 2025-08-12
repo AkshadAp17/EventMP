@@ -6,7 +6,7 @@ import { setupAuth } from "./replitAuth";
 import { authenticateUser, createUser, requireAuth, requireAdmin, type AuthUser } from "./auth-simple";
 // Using in-memory storage with Zod validation
 import { z } from "zod";
-import { insertEventSchema, insertBookingSchema } from "@shared/schema";
+import { insertEventSchema, insertBookingSchema, insertContactMessageSchema } from "@shared/schema";
 import nodemailer from "nodemailer";
 
 // Email transporter setup
@@ -920,7 +920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'admin_announcement',
           title: title,
           message: message,
-          metadata: eventId ? { eventId: parseInt(eventId) } : {},
+          // metadata: eventId ? { eventId: parseInt(eventId) } : {},
         });
         notifications.push(notification);
 
