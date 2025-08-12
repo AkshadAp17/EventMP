@@ -5,7 +5,7 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import connectPg from "connect-pg-simple";
+import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
@@ -32,12 +32,10 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
+  // Use memory store for clean Replit environment
+  const MemStore = MemoryStore(session);
+  const sessionStore = new MemStore({
+    checkPeriod: sessionTtl, // prune expired entries every 24h
   });
 
   const sessionSettings: session.SessionOptions = {
