@@ -246,41 +246,39 @@ export class MongoStorage implements IStorage {
 
   async updateEventAttendeeCount(eventId: number): Promise<void> {
     try {
-      console.log('Updating attendee count for event ID:', eventId);
+      console.log('🎫 Updating attendee count for event ID:', eventId);
       
       const confirmedBookings = await BookingModel.find({
         eventId: eventId.toString(),
         status: 'confirmed'
       }).exec();
       
-      console.log('Found confirmed bookings:', confirmedBookings.length);
+      console.log('📊 Found confirmed bookings:', confirmedBookings.length, confirmedBookings.map(b => ({ id: b._id, quantity: b.quantity })));
       
       const totalAttendees = confirmedBookings.reduce((sum, booking) => {
-        console.log('Booking quantity:', booking.quantity);
         return sum + booking.quantity;
       }, 0);
       
-      console.log('Total attendees calculated:', totalAttendees);
+      console.log('🔢 Total attendees calculated:', totalAttendees);
       
-      // Find the event by numeric ID first, then update by MongoDB _id
-      const events = await EventModel.find({}).exec();
-      const targetEvent = events.find(e => {
-        const eventIdNum = parseInt(e._id);
-        return eventIdNum === eventId;
-      });
+      // Update event directly by searching for the matching event ID
+      const result = await EventModel.findOneAndUpdate(
+        { _id: eventId.toString() },
+        { currentAttendees: totalAttendees },
+        { new: true }
+      ).exec();
       
-      if (targetEvent) {
-        await EventModel.findByIdAndUpdate(
-          targetEvent._id,
-          { currentAttendees: totalAttendees },
-          { new: true }
-        ).exec();
-        console.log('Event attendee count updated successfully to:', totalAttendees);
+      if (result) {
+        console.log('✅ Event attendee count updated successfully:', {
+          eventId: eventId,
+          newAttendeeCount: totalAttendees,
+          eventName: result.name
+        });
       } else {
-        console.error('Event not found for attendee count update:', eventId);
+        console.error('❌ Event not found for attendee count update:', eventId);
       }
     } catch (error) {
-      console.error('Error updating event attendee count:', error);
+      console.error('💥 Error updating event attendee count:', error);
     }
   }
 
@@ -298,6 +296,7 @@ export class MongoStorage implements IStorage {
       await booking.save();
       
       // Always update event attendee count when booking is created
+      console.log('About to update attendee count for eventId:', bookingData.eventId);
       await this.updateEventAttendeeCount(parseInt(bookingData.eventId));
       
       return { ...booking.toObject(), id: booking._id };

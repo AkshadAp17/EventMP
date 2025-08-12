@@ -55,7 +55,7 @@ export default function MyTickets() {
               </Card>
             ))}
           </div>
-        ) : bookings && bookings.length > 0 ? (
+        ) : bookings && Array.isArray(bookings) && bookings.length > 0 ? (
           <div className="grid gap-6">
             {bookings.map((booking: any) => (
               <Card key={booking.id} className="glass-effect">
@@ -93,7 +93,16 @@ export default function MyTickets() {
                       </div>
                       <div>
                         <p className="text-muted-foreground">Booked On</p>
-                        <p className="font-semibold">{new Date(booking.createdAt).toLocaleDateString()}</p>
+                        <p className="font-semibold">
+                          {booking.createdAt 
+                            ? new Date(booking.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })
+                            : 'N/A'
+                          }
+                        </p>
                       </div>
                     </div>
                   </div>

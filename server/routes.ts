@@ -626,9 +626,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await sendBookingConfirmationEmail(booking, event);
       }
       
-      // Force manual attendee count update
-      console.log('Forcing attendee count update after booking creation');
-      await storage.updateEventAttendeeCount(parseInt(req.body.eventId));
+      // Force manual attendee count update with proper event ID conversion
+      const eventIdForUpdate = parseInt(req.body.eventId);
+      console.log('🔄 Forcing attendee count update after booking creation for event:', eventIdForUpdate);
+      await storage.updateEventAttendeeCount(eventIdForUpdate);
       
       // Return booking with proper ID for frontend
       const bookingWithEvent = await storage.getBooking(booking.id);
