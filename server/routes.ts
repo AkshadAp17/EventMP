@@ -411,11 +411,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin = req.user.isAdmin || false;
       }
       
-      // For non-admin users, default to showing only active events
+      // Show all events to regular users, admins can filter by status
       let finalStatus = status as string;
-      if (!isAdmin && !status) {
-        finalStatus = 'active';
-      }
+      // Remove automatic filtering so all events show by default
       
       const events = await storage.getEvents({
         search: search as string,
