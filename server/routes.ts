@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
 // Using in-memory storage with Zod validation
 import { z } from "zod";
+import { insertEventSchema, insertBookingSchema } from "@shared/schema";
 import nodemailer from "nodemailer";
 
 // Email transporter setup
