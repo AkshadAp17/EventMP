@@ -72,7 +72,7 @@ export async function authenticateUser(email: string, password: string): Promise
           id: user.id,
           email: user.email,
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User',
-          isAdmin: user.isAdmin,
+          isAdmin: user.isAdmin || false,
         };
       }
     }
@@ -109,7 +109,7 @@ export async function createUser(email: string, password: string, name: string):
       id: newUser.id,
       email: newUser.email,
       name: `${newUser.firstName || ''} ${newUser.lastName || ''}`.trim() || newUser.username || 'User',
-      isAdmin: newUser.isAdmin,
+      isAdmin: newUser.isAdmin || false,
     };
   } catch (error) {
     console.error('Error creating user:', error);
