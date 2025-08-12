@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Redirect } from "wouter";
-import { Calendar, Users, Trophy } from "lucide-react";
+import { Calendar, Users, Trophy, Eye, EyeOff } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -31,6 +31,8 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -195,7 +197,29 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Enter your password" {...field} />
+                              <div className="relative">
+                                <Input 
+                                  type={showLoginPassword ? "text" : "password"} 
+                                  placeholder="Enter your password" 
+                                  {...field} 
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                                >
+                                  {showLoginPassword ? (
+                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <Eye className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                  <span className="sr-only">
+                                    {showLoginPassword ? "Hide password" : "Show password"}
+                                  </span>
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -212,11 +236,7 @@ export default function AuthPage() {
                     </form>
                   </Form>
 
-                  <div className="text-center text-sm text-gray-500">
-                    <p>Demo admin account:</p>
-                    <p>Email: admin@eventmaster.com</p>
-                    <p>Password: admin123</p>
-                  </div>
+
                 </TabsContent>
 
                 <TabsContent value="register" className="space-y-4">
@@ -287,7 +307,29 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Create a password" {...field} />
+                              <div className="relative">
+                                <Input 
+                                  type={showRegisterPassword ? "text" : "password"} 
+                                  placeholder="Create a password" 
+                                  {...field} 
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                                >
+                                  {showRegisterPassword ? (
+                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <Eye className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                  <span className="sr-only">
+                                    {showRegisterPassword ? "Hide password" : "Show password"}
+                                  </span>
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
