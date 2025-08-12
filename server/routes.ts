@@ -395,6 +395,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual attendee count update route for debugging
+  app.post('/api/events/:id/update-attendee-count', isAuthenticated, async (req: any, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      console.log('Manual attendee count update for event:', eventId);
+      
+      await storage.updateEventAttendeeCount(eventId);
+      
+      const updatedEvent = await storage.getEvent(eventId);
+      res.json({ 
+        success: true, 
+        eventId, 
+        currentAttendees: updatedEvent?.currentAttendees,
+        message: 'Attendee count updated successfully' 
+      });
+    } catch (error) {
+      console.error('Error in manual attendee count update:', error);
+      res.status(500).json({ message: 'Failed to update attendee count' });
+    }
+  });
+
   // Event routes
   app.get('/api/events', async (req, res) => {
     try {
@@ -604,6 +625,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (booking && event) {
         await sendBookingConfirmationEmail(booking, event);
       }
+      
+      // Force manual attendee count update
+      console.log('Forcing attendee count update after booking creation');
+      await storage.updateEventAttendeeCount(parseInt(req.body.eventId));
       
       // Return booking with proper ID for frontend
       const bookingWithEvent = await storage.getBooking(booking.id);

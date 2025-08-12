@@ -246,20 +246,41 @@ export class MongoStorage implements IStorage {
 
   async updateEventAttendeeCount(eventId: number): Promise<void> {
     try {
+      console.log('Updating attendee count for event ID:', eventId);
+      
       const confirmedBookings = await BookingModel.find({
         eventId: eventId.toString(),
         status: 'confirmed'
       }).exec();
       
-      const totalAttendees = confirmedBookings.reduce((sum, booking) => sum + booking.quantity, 0);
+      console.log('Found confirmed bookings:', confirmedBookings.length);
       
-      await EventModel.findByIdAndUpdate(
-        eventId.toString(),
-        { currentAttendees: totalAttendees }
-      ).exec();
+      const totalAttendees = confirmedBookings.reduce((sum, booking) => {
+        console.log('Booking quantity:', booking.quantity);
+        return sum + booking.quantity;
+      }, 0);
+      
+      console.log('Total attendees calculated:', totalAttendees);
+      
+      // Find the event by numeric ID first, then update by MongoDB _id
+      const events = await EventModel.find({}).exec();
+      const targetEvent = events.find(e => {
+        const eventIdNum = parseInt(e._id);
+        return eventIdNum === eventId;
+      });
+      
+      if (targetEvent) {
+        await EventModel.findByIdAndUpdate(
+          targetEvent._id,
+          { currentAttendees: totalAttendees },
+          { new: true }
+        ).exec();
+        console.log('Event attendee count updated successfully to:', totalAttendees);
+      } else {
+        console.error('Event not found for attendee count update:', eventId);
+      }
     } catch (error) {
       console.error('Error updating event attendee count:', error);
-      throw error;
     }
   }
 
