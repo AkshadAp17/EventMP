@@ -398,20 +398,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/events/:id/update-attendee-count', requireAuth, async (req: any, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      console.log('Manual attendee count update for event:', eventId);
+      console.log('🔧 Manual attendee count update for event:', eventId);
       
       await storage.updateEventAttendeeCount(eventId);
       
       const updatedEvent = await storage.getEvent(eventId);
+      console.log('📊 Updated event current attendees:', updatedEvent?.currentAttendees);
+      
       res.json({ 
         success: true, 
         eventId, 
-        currentAttendees: updatedEvent?.currentAttendees,
+        currentAttendees: updatedEvent?.currentAttendees || 0,
+        maxAttendees: updatedEvent?.maxAttendees || 0,
         message: 'Attendee count updated successfully' 
       });
     } catch (error) {
       console.error('Error in manual attendee count update:', error);
       res.status(500).json({ message: 'Failed to update attendee count' });
+    }
+  });
+
+  // Bulk update all event attendee counts
+  app.post('/api/events/update-all-attendee-counts', requireAuth, async (req: any, res) => {
+    try {
+      console.log('🔄 Bulk updating all event attendee counts...');
+      const events = await storage.getEvents({});
+      const results = [];
+      
+      for (const event of events) {
+        await storage.updateEventAttendeeCount(event.id);
+        const updatedEvent = await storage.getEvent(event.id);
+        results.push({
+          eventId: event.id,
+          name: event.name,
+          currentAttendees: updatedEvent?.currentAttendees || 0,
+          maxAttendees: updatedEvent?.maxAttendees || 0
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'All event attendee counts updated',
+        results 
+      });
+    } catch (error) {
+      console.error('Error in bulk attendee count update:', error);
+      res.status(500).json({ message: 'Failed to update attendee counts' });
     }
   });
 
