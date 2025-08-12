@@ -222,9 +222,22 @@ function AttendeesTable() {
                   </span>
                 </td>
                 <td className="p-4">
-                  <p className="text-sm text-slate-800">
-                    {new Date(booking.createdAt).toLocaleDateString()}
-                  </p>
+                  <div>
+                    <p className="text-sm text-slate-800 font-medium">
+                      {new Date(booking.createdAt).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Booked at {new Date(booking.createdAt).toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                      })}
+                    </p>
+                  </div>
                 </td>
               </tr>
             ))}

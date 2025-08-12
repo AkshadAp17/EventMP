@@ -342,21 +342,37 @@ export class MongoStorage implements IStorage {
       
       console.log('🔢 Total attendees calculated:', totalAttendees);
       
-      // Update event directly by searching for the matching event ID
+      // Find the correct event document by searching all events
+      const allEvents = await EventModel.find({}).exec();
+      const matchingEvent = allEvents.find(event => {
+        const eventNumericId = parseInt(event._id.toString()) || parseInt(event.id?.toString() || '0');
+        return eventNumericId === eventId;
+      });
+      
+      if (!matchingEvent) {
+        console.error('❌ Event not found for attendee count update:', eventId);
+        return;
+      }
+      
+      // Update using the MongoDB _id
       const result = await EventModel.findByIdAndUpdate(
-        eventId.toString(),
-        { currentAttendees: totalAttendees },
+        matchingEvent._id,
+        { 
+          currentAttendees: totalAttendees,
+          updatedAt: new Date()
+        },
         { new: true }
       ).exec();
       
       if (result) {
         console.log('✅ Event attendee count updated successfully:', {
           eventId: eventId,
+          mongoId: matchingEvent._id,
           newAttendeeCount: totalAttendees,
           eventName: result.name
         });
       } else {
-        console.error('❌ Event not found for attendee count update:', eventId);
+        console.error('❌ Failed to update event:', eventId);
       }
     } catch (error) {
       console.error('💥 Error updating event attendee count:', error);
@@ -378,6 +394,10 @@ export class MongoStorage implements IStorage {
       
       // Always update event attendee count when booking is created
       console.log('About to update attendee count for eventId:', bookingData.eventId);
+      await this.updateEventAttendeeCount(parseInt(bookingData.eventId));
+      
+      // Also force an immediate attendee count update
+      console.log('🔄 Forcing attendee count update after booking creation for event:', bookingData.eventId);
       await this.updateEventAttendeeCount(parseInt(bookingData.eventId));
       
       return { ...booking.toObject(), id: booking._id };

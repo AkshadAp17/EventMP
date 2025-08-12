@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, MapPin, Users, DollarSign } from "lucide-react";
+import { Calendar, MapPin, Users, DollarSign, Clock } from "lucide-react";
 
 interface EventCardProps {
   event: {
@@ -100,11 +100,28 @@ export default function EventCard({ event }: EventCardProps) {
           <div className="flex items-center space-x-2 text-slate-500 text-sm">
             <Calendar className="h-4 w-4" />
             <span>
-              {new Date(event.startDate).toLocaleDateString()} at{" "}
-              {new Date(event.startDate).toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+              {new Date(event.startDate).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
               })}
+              {new Date(event.startDate).toLocaleDateString() !== new Date(event.endDate).toLocaleDateString() && 
+                ` - ${new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+              }
+            </span>
+          </div>
+          
+          <div className="flex items-center space-x-2 text-slate-500 text-sm">
+            <Clock className="h-4 w-4" />
+            <span>
+              {new Date(event.startDate).toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+              })}
+              {new Date(event.startDate).toLocaleDateString() === new Date(event.endDate).toLocaleDateString() &&
+                ` - ${new Date(event.endDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+              }
             </span>
           </div>
           
@@ -115,7 +132,9 @@ export default function EventCard({ event }: EventCardProps) {
           
           <div className="flex items-center space-x-2 text-slate-500 text-sm">
             <Users className="h-4 w-4" />
-            <span>{event.currentAttendees} / {event.maxAttendees} attendees</span>
+            <span className="font-medium text-slate-700">{event.currentAttendees}</span>
+            <span className="text-slate-400">/</span>
+            <span className="text-slate-400">{event.maxAttendees} attending</span>
           </div>
         </div>
         
