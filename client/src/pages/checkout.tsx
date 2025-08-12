@@ -257,35 +257,44 @@ export default function Checkout() {
                 <CardTitle>Payment Details</CardTitle>
               </CardHeader>
               <CardContent>
-                {!stripePromise ? (
-                  <div className="text-center py-8">
-                    <CreditCard className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-800 mb-2">Payment Unavailable</h3>
-                    <p className="text-slate-600 mb-4">
-                      Payment processing is not configured. Please contact support.
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">Booking Confirmed!</h3>
+                  <p className="text-slate-600 mb-4">
+                    Your booking has been automatically confirmed. A confirmation email has been sent to your email address.
+                  </p>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <p className="text-green-800 text-sm">
+                      <strong>Confirmation sent to:</strong> {booking.attendeeEmail}
                     </p>
+                    <p className="text-green-800 text-sm mt-1">
+                      <strong>Booking Reference:</strong> {booking.bookingReference}
+                    </p>
+                  </div>
+                  <div className="flex gap-3 justify-center">
                     <Button 
-                      onClick={() => window.location.href = `/events/${booking.event.id}`}
+                      onClick={() => window.location.href = `/my-tickets`}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      View My Tickets
+                    </Button>
+                    <Button 
+                      onClick={() => window.location.href = `/events`}
                       variant="outline"
                     >
-                      Back to Event
+                      Browse Events
                     </Button>
                   </div>
-                ) : !clientSecret ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-                    <p className="text-slate-600">Setting up payment...</p>
-                  </div>
-                ) : (
-                  <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <CheckoutForm booking={booking} />
-                  </Elements>
-                )}
+                </div>
               </CardContent>
             </Card>
 
             <div className="text-xs text-slate-500 text-center">
-              <p>Your payment is secured by Stripe. We never store your payment information.</p>
+              <p>Your booking is confirmed automatically. Payment arrangements will be handled separately via email.</p>
             </div>
           </div>
         </div>

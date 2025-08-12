@@ -516,5 +516,6 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Create and export storage instance
+// Create and export storage instance - using in-memory for now while fixing payment system
+console.log('Using in-memory storage with Gmail confirmations only');
 export const storage = new MemStorage();

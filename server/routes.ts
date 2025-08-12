@@ -574,12 +574,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const bookingData = insertBookingSchema.parse({
-        ...req.body,
+      // Generate booking reference
+      const bookingReference = `BK${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+      
+      const bookingData = {
+        eventId: parseInt(req.body.eventId),
         userId,
+        quantity: req.body.quantity || 1,
+        totalAmount: req.body.totalAmount,
+        status: 'confirmed', // Auto-confirm since no payment processing
+        bookingReference,
         attendeeEmail: user.email || req.body.attendeeEmail,
-        attendeeName: `${user.firstName} ${user.lastName}` || req.body.attendeeName,
-      });
+        attendeeName: req.body.attendeeName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+      };
       
       const booking = await storage.createBooking(bookingData);
       
@@ -591,70 +598,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(booking);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid booking data", errors: error.errors });
-      }
       console.error("Error creating booking:", error);
       res.status(500).json({ message: "Failed to create booking" });
     }
   });
 
-  // Email-based payment confirmation routes
-  app.post("/api/payment/email-confirmation", isAuthenticated, async (req: any, res) => {
+  // Skip Stripe payment and create booking with email confirmation
+  app.post("/api/payment/create-intent", isAuthenticated, async (req: any, res) => {
     try {
-      const { bookingId } = req.body;
-      
-      if (!bookingId) {
-        return res.status(400).json({ message: "Booking ID is required" });
-      }
-
-      const booking = await storage.getBooking(parseInt(bookingId));
-      if (!booking) {
-        return res.status(404).json({ message: "Booking not found" });
-      }
-
-      // Send email confirmation to user
-      const emailSubject = `Payment Confirmation Required - ${booking.event.name}`;
-      const emailContent = `
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #8B5CF6; text-align: center;">Payment Confirmation Required</h2>
-          
-          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3>Event Details:</h3>
-            <p><strong>Event:</strong> ${booking.event.name}</p>
-            <p><strong>Date:</strong> ${new Date(booking.event.startDate).toLocaleDateString()}</p>
-            <p><strong>Location:</strong> ${booking.event.location}</p>
-            <p><strong>Quantity:</strong> ${booking.quantity} ticket(s)</p>
-            <p><strong>Total Amount:</strong> $${booking.totalAmount}</p>
-            <p><strong>Booking Reference:</strong> ${booking.bookingReference}</p>
-          </div>
-
-          <div style="background: #fee2e2; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: #dc2626; margin: 0;"><strong>Action Required:</strong></p>
-            <p style="color: #dc2626; margin: 5px 0 0 0;">Please reply to this email with "PAYMENT CONFIRMED" to complete your booking.</p>
-          </div>
-
-          <div style="text-align: center; margin: 30px 0;">
-            <p style="color: #6b7280;">Thank you for choosing EventMaster!</p>
-          </div>
-        </div>
-      `;
-
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: booking.attendeeEmail,
-        subject: emailSubject,
-        html: emailContent,
-      });
-
+      // Since we're not using Stripe, we just return success
       res.json({ 
-        message: "Payment confirmation email sent successfully",
-        bookingReference: booking.bookingReference 
+        success: true, 
+        message: "Payment processing disabled - booking will be confirmed via email" 
       });
     } catch (error) {
-      console.error("Error sending payment confirmation email:", error);
-      res.status(500).json({ message: "Failed to send payment confirmation email" });
+      console.error("Error in payment endpoint:", error);
+      res.status(500).json({ message: "Payment system unavailable" });
     }
+
   });
 
   // Manual payment confirmation by admin
