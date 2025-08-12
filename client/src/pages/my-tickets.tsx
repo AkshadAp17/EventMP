@@ -60,28 +60,64 @@ export default function MyTickets() {
             {bookings.map((booking: any) => (
               <Card key={booking.id} className="glass-effect">
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">{booking.event?.name}</h3>
-                      <div className="flex items-center text-muted-foreground text-sm mb-2">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        {booking.event?.startDate 
-                          ? new Date(booking.event.startDate).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })
-                          : 'Event Date TBD'
-                        }
-                      </div>
-                      <div className="flex items-center text-muted-foreground text-sm">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        {booking.event?.location}
+                  <div className="flex gap-6">
+                    {/* Event Image */}
+                    <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      {booking.event?.imageUrl ? (
+                        <img 
+                          src={booking.event.imageUrl} 
+                          alt={booking.event.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                          <Calendar className="w-8 h-8 text-primary" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Event Details */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-xl font-semibold mb-2">{booking.event?.name}</h3>
+                          <div className="flex items-center text-muted-foreground text-sm mb-2">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {booking.event?.startDate 
+                              ? (() => {
+                                  const startDate = new Date(booking.event.startDate);
+                                  const endDate = booking.event.endDate ? new Date(booking.event.endDate) : null;
+                                  
+                                  if (endDate && startDate.toDateString() !== endDate.toDateString()) {
+                                    return `${startDate.toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })} - ${endDate.toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}`;
+                                  } else {
+                                    return startDate.toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    });
+                                  }
+                                })()
+                              : 'Event Date TBD'
+                            }
+                          </div>
+                          <div className="flex items-center text-muted-foreground text-sm">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {booking.event?.location || 'Location TBD'}
+                          </div>
+                        </div>
+                        <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
+                          {booking.status}
+                        </Badge>
                       </div>
                     </div>
-                    <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
-                      {booking.status}
-                    </Badge>
                   </div>
                   
                   <div className="border-t pt-4 mt-4">
@@ -96,7 +132,7 @@ export default function MyTickets() {
                       </div>
                       <div>
                         <p className="text-muted-foreground">Reference</p>
-                        <p className="font-semibold font-mono">{booking.referenceCode}</p>
+                        <p className="font-semibold font-mono">{booking.bookingReference || booking.referenceCode}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Booked On</p>
