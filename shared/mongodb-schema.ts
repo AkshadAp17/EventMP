@@ -93,7 +93,7 @@ const eventMongoSchema = new Schema({
   description: { type: String, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
-  location: { type: String, required: true },
+  location: { type: String, required: false, default: 'TBD' },
   ticketPrice: { type: String, required: true },
   maxAttendees: { type: Number, required: true },
   currentAttendees: { type: Number, default: 0 },

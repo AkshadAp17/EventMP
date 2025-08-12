@@ -577,11 +577,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate booking reference
       const bookingReference = `BK${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
       
+      // Get event to calculate total amount
+      const event = await storage.getEvent(parseInt(req.body.eventId));
+      if (!event) {
+        return res.status(404).json({ message: 'Event not found' });
+      }
+      
+      const quantity = req.body.quantity || 1;
+      const totalAmount = (parseFloat(event.ticketPrice) * quantity).toFixed(2);
+
       const bookingData = {
         eventId: parseInt(req.body.eventId),
         userId,
-        quantity: req.body.quantity || 1,
-        totalAmount: req.body.totalAmount,
+        quantity,
+        totalAmount,
         status: 'confirmed', // Auto-confirm since no payment processing
         bookingReference,
         attendeeEmail: user.email || req.body.attendeeEmail,
@@ -590,8 +599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const booking = await storage.createBooking(bookingData);
       
-      // Get event details for email
-      const event = await storage.getEvent(booking.eventId);
+      // Send email confirmation using event details already retrieved
       if (booking && event) {
         await sendBookingConfirmationEmail(booking, event);
       }
