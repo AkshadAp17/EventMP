@@ -65,7 +65,14 @@ export default function MyTickets() {
                       <h3 className="text-xl font-semibold mb-2">{booking.event?.name}</h3>
                       <div className="flex items-center text-muted-foreground text-sm mb-2">
                         <Calendar className="w-4 h-4 mr-2" />
-                        {new Date(booking.event?.startDate).toLocaleDateString()}
+                        {booking.event?.startDate 
+                          ? new Date(booking.event.startDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })
+                          : 'Event Date TBD'
+                        }
                       </div>
                       <div className="flex items-center text-muted-foreground text-sm">
                         <MapPin className="w-4 h-4 mr-2" />

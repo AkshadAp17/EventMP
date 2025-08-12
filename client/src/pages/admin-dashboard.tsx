@@ -118,7 +118,7 @@ function SendNotificationModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="default">
           <Mail className="w-4 h-4 mr-2" />
           Send Notification
         </Button>
@@ -201,13 +201,13 @@ function AttendeesTable() {
             {bookings.map((booking: any) => (
               <tr key={booking.id} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className="p-4">
-                  <p className="font-semibold text-slate-800">{booking.attendeeName}</p>
+                  <p className="font-semibold text-slate-800">{booking.user?.firstName || booking.attendeeName} {booking.user?.lastName || ''}</p>
                 </td>
                 <td className="p-4">
-                  <p className="text-sm text-slate-800">{booking.attendeeEmail}</p>
+                  <p className="text-sm text-slate-800">{booking.user?.email || booking.attendeeEmail}</p>
                 </td>
                 <td className="p-4">
-                  <p className="text-sm text-slate-800">{booking.event?.name || 'Unknown Event'}</p>
+                  <p className="text-sm text-slate-800">{booking.event?.name || 'Loading Event...'}</p>
                 </td>
                 <td className="p-4">
                   <p className="text-sm text-slate-800">{booking.quantity}</p>
@@ -333,7 +333,7 @@ function TicketsTable() {
                   <p className="font-mono text-sm text-slate-800">{booking.bookingReference}</p>
                 </td>
                 <td className="p-4">
-                  <p className="text-sm text-slate-800">{booking.event?.name || 'Unknown Event'}</p>
+                  <p className="text-sm text-slate-800">{booking.event?.name || 'Loading Event...'}</p>
                 </td>
                 <td className="p-4">
                   <div>

@@ -262,8 +262,8 @@ export class MongoStorage implements IStorage {
       console.log('🔢 Total attendees calculated:', totalAttendees);
       
       // Update event directly by searching for the matching event ID
-      const result = await EventModel.findOneAndUpdate(
-        { _id: eventId.toString() },
+      const result = await EventModel.findByIdAndUpdate(
+        eventId.toString(),
         { currentAttendees: totalAttendees },
         { new: true }
       ).exec();
