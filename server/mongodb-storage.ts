@@ -26,11 +26,28 @@ export class MongoStorage implements IStorage {
     connectToDatabase();
   }
 
-  // User operations
+  // User operations  
   async getUser(id: string): Promise<User | undefined> {
     try {
       const user = await UserModel.findById(id).exec();
-      return user ? { ...user.toObject(), id: user._id } : undefined;
+      if (!user) return undefined;
+      
+      const userObj = user.toObject();
+      return {
+        id: userObj._id,
+        email: userObj.email,
+        username: userObj.username,
+        password: userObj.password,
+        firstName: userObj.firstName,
+        lastName: userObj.lastName,
+        profileImageUrl: userObj.profileImageUrl,
+        isAdmin: userObj.isAdmin,
+        stripeCustomerId: userObj.stripeCustomerId,
+        authProvider: userObj.authProvider,
+        authProviderId: userObj.authProviderId,
+        createdAt: userObj.createdAt,
+        updatedAt: userObj.updatedAt,
+      };
     } catch (error) {
       console.error('Error getting user:', error);
       return undefined;
@@ -96,13 +113,15 @@ export class MongoStorage implements IStorage {
   }
 
   // Event operations
-  async createEvent(eventData: InsertEvent): Promise<Event> {
+  async createEvent(eventData: any): Promise<Event> {
     try {
       const id = new mongoose.Types.ObjectId().toString();
       const event = new EventModel({
         _id: id,
         ...eventData,
-        currentAttendees: 0,
+        organizerId: eventData.createdBy || eventData.organizerId,
+        createdBy: eventData.createdBy || eventData.organizerId,
+        currentAttendees: eventData.currentAttendees || 0,
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -135,7 +154,26 @@ export class MongoStorage implements IStorage {
       }
       
       const events = await EventModel.find(query).sort({ startDate: 1 }).exec();
-      return events.map(event => ({ ...event.toObject(), id: event._id }));
+      return events.map(event => {
+        const eventObj = event.toObject();
+        return {
+          id: parseInt(eventObj._id) || eventObj._id,
+          name: eventObj.name,
+          description: eventObj.description,
+          startDate: eventObj.startDate,
+          endDate: eventObj.endDate,
+          location: eventObj.location,
+          ticketPrice: eventObj.ticketPrice,
+          maxAttendees: eventObj.maxAttendees,
+          currentAttendees: eventObj.currentAttendees,
+          category: eventObj.category,
+          status: eventObj.status,
+          imageUrl: eventObj.imageUrl,
+          createdBy: eventObj.createdBy || eventObj.organizerId,
+          createdAt: eventObj.createdAt,
+          updatedAt: eventObj.updatedAt,
+        };
+      });
     } catch (error) {
       console.error('Error getting events:', error);
       return [];

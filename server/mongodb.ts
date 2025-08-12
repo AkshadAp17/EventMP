@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 // MongoDB connection setup
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb+srv://akmnop757:wCuo37LlDAMSIH4y@cluster0.mnlhhpt.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 if (!MONGODB_URI) {
   console.error('MongoDB URI not found. Please set MONGODB_URI environment variable.');

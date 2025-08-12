@@ -80,7 +80,9 @@ const userMongoSchema = new Schema({
   lastName: { type: String, default: null },
   profileImageUrl: { type: String, default: null },
   isAdmin: { type: Boolean, default: false },
+  stripeCustomerId: { type: String, default: null },
   authProvider: { type: String, default: 'local' },
+  authProviderId: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -99,6 +101,7 @@ const eventMongoSchema = new Schema({
   status: { type: String, enum: ['draft', 'active', 'upcoming', 'completed'], default: 'active' },
   imageUrl: { type: String, default: null },
   organizerId: { type: String, required: true },
+  createdBy: { type: String, required: true }, // Add this field for compatibility
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
